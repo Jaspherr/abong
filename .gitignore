@@ -1,0 +1,31 @@
+node_modules
+dist
+dist-ssr
+*.local
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+.idea
+.vscode/*
+!.vscode/extensions.json
+coverage
+playwright-report
+test-results
+blob-report
+*.tsbuildinfo
+Thumbs.db
+
+# Local credentials and keys
+*.pem
+*.key
+*.p12
+*.pfx
+.npmrc
+.netrc
+credentials.json
+
+# Local tool state
+.claude/settings.local.json
+.impeccable/

@@ -1,0 +1,28 @@
+/**
+ * Data access boundary. UI code imports services from here only; each service
+ * currently resolves against the in-memory mock store and will be swapped for
+ * HTTP calls without changing call sites.
+ */
+export { adminService } from "./admin.service"
+export { authService } from "./auth.service"
+export { favoritesService } from "./favorites.service"
+export { inquiriesService } from "./inquiries.service"
+export { landlordsService } from "./landlords.service"
+export { listingsService } from "./listings.service"
+export { locationsService, places } from "./locations.service"
+export { notificationsService } from "./notifications.service"
+export { propertiesService } from "./properties.service"
+export { reportsService } from "./reports.service"
+export { verificationService } from "./verification.service"
+export { viewingsService } from "./viewings.service"
+export { ServiceError } from "./mock/latency"
+export { resetDemoData } from "./mock/db"
+
+export type { AdminLandlordRow, ModerationItem, Paged, ReportWithContext, UserQuery } from "./admin.service"
+export type { InquiryThread } from "./inquiries.service"
+export type { PublicLandlord } from "./landlords.service"
+export type { MunicipalityWithCount } from "./locations.service"
+export type { ManagedProperty, PropertyDraft, UnitDraft } from "./properties.service"
+export type { RegisterInput } from "./auth.service"
+export type { VerificationQueueItem } from "./verification.service"
+export type { ViewingWithContext } from "./viewings.service"

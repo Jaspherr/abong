@@ -1,0 +1,20 @@
+{
+  "name": "abong",
+  "private": true,
+  "description": "Abong",
+  "workspaces": [
+    "apps/web"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w @abong/web",
+    "build": "npm run build -w @abong/web",
+    "preview": "npm run preview -w @abong/web",
+    "typecheck": "npm run typecheck -w @abong/web",
+    "lint": "npm run lint -w @abong/web",
+    "check": "npm run typecheck && npm run lint && npm run build",
+    "test:e2e": "npm run test:e2e -w @abong/web"
+  },
+  "engines": {
+    "node": ">=20.19"
+  }
+}

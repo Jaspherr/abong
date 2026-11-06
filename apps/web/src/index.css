@@ -1,0 +1,467 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/bricolage-grotesque/opsz.css";
+@import "@fontsource-variable/figtree/wght.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * Abong design tokens.
+ * Restrained product palette: a barely-warm neutral ground, white surfaces for
+ * things you act on, near-black ink, and one green accent for actions and
+ * trust. Amber is reserved for "needs your attention" counts.
+ * Components reference semantic names only.
+ */
+:root {
+  /* Brand palette */
+  --brand-ground: #f6f6f3;   /* page ground */
+  --brand-surface: #ffffff;  /* listings, inputs, panels */
+  --brand-tint: #eef1ee;     /* quiet section ground */
+  --brand-tint-deep: #dfe6e1;
+  --brand-line: #e3e3de;     /* hairlines */
+  --brand-ink: #17191c;      /* text */
+  --brand-green: #1c5b45;    /* the one action colour */
+  --brand-green-deep: #144634;
+  --brand-amber: #d99a0b;    /* attention counts only */
+
+  --background: var(--brand-ground);
+  --foreground: var(--brand-ink);
+  --card: var(--brand-surface);
+  --card-foreground: var(--brand-ink);
+  --popover: var(--brand-surface);
+  --popover-foreground: var(--brand-ink);
+  --primary: var(--brand-green);
+  --primary-hover: var(--brand-green-deep);
+  --primary-foreground: #ffffff;
+  --secondary: #e7efea;
+  --secondary-foreground: #144634;
+  --muted: #efefeb;
+  --muted-foreground: #5e636b;
+  --accent: #efefeb;
+  --accent-foreground: var(--brand-ink);
+  --mango: var(--brand-amber);
+  --mango-soft: #fbf0d3;
+  --mango-foreground: #5c3d00;
+  --pan: var(--brand-tint);
+  --pan-deep: var(--brand-tint-deep);
+  --dike: var(--brand-line);
+  --destructive: #b42318;
+  --destructive-soft: #fbe9e7;
+  --success: #17703f;
+  --success-soft: #e3f2e8;
+  --warning: #8a5300;
+  --warning-soft: #fcf0da;
+  --info: #23598c;
+  --info-soft: #e6eef6;
+  --border: var(--brand-line);
+  --input: #d3d3cd;
+  --ring: var(--brand-green);
+
+  --chart-1: var(--brand-green);
+  --chart-2: #6f9c8a;
+  --chart-3: var(--brand-amber);
+  --chart-4: #9aa0a6;
+  --chart-5: var(--brand-ink);
+
+  /* Base radius for controls; see the scale in @theme. */
+  --radius: 0.5rem;
+
+  --sidebar: var(--brand-surface);
+  --sidebar-foreground: var(--brand-ink);
+  --sidebar-primary: var(--brand-green);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: var(--muted);
+  --sidebar-accent-foreground: var(--brand-ink);
+  --sidebar-border: var(--brand-line);
+  --sidebar-ring: var(--brand-green);
+
+  /* Panels sit on the ground with a hairline. Real elevation (popovers,
+     sheets, sticky bars) uses --shadow-raised. */
+  --shadow-card: 0 0 0 1px var(--brand-line);
+  --shadow-raised: 0 1px 2px rgb(23 25 28 / 0.06), 0 12px 32px -12px rgb(23 25 28 / 0.22);
+  --ease-out-soft: cubic-bezier(0.23, 1, 0.32, 1);
+  --header-height: 4rem;
+
+  /* Scrollbar thumb: translucent ink, so it sits on any surface and follows --foreground. */
+  --scrollbar-thumb: color-mix(in srgb, var(--foreground) 36%, transparent);
+  --scrollbar-thumb-hover: color-mix(in srgb, var(--foreground) 56%, transparent);
+}
+
+/* People who ask for more contrast get a thumb that doesn't fade into the page. */
+@media (prefers-contrast: more) {
+  :root {
+    --scrollbar-thumb: color-mix(in srgb, var(--foreground) 70%, transparent);
+    --scrollbar-thumb-hover: var(--foreground);
+  }
+}
+
+@theme inline {
+  --font-sans: "Figtree Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-heading: "Bricolage Grotesque Variable", ui-sans-serif, system-ui, sans-serif;
+
+  /* Type scale. Tailwind's text-xs/sm/base/lg stay for controls; these name the
+     roles that kept being written as one-off values. Headings live in the
+     type-* utilities below so their responsive steps are defined once. */
+  --text-caption: 0.75rem; /* 12px: timestamps, counts, chart axes. Nothing smaller. */
+  --text-caption--line-height: 1.4;
+  --text-meta: 0.8125rem; /* 13px: supporting metadata, helper text */
+  --text-meta--line-height: 1.45;
+  --text-body: 0.9375rem; /* 15px: reading copy and list rows */
+  --text-body--line-height: 1.6;
+  --text-lead: 1.0625rem; /* 17px: intros and key descriptions */
+  --text-lead--line-height: 1.6;
+  --text-price: 1.375rem; /* 22px: price on a listing card */
+  --text-price--line-height: 1;
+  --text-metric: 1.75rem; /* 28px: dashboard numbers */
+  --text-metric--line-height: 1.1;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-mango: var(--mango);
+  --color-mango-soft: var(--mango-soft);
+  --color-mango-foreground: var(--mango-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-soft: var(--destructive-soft);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-ink: var(--brand-ink);
+  --color-pan: var(--pan);
+  --color-pan-deep: var(--pan-deep);
+  --color-dike: var(--dike);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Radius scale: 4 / 6 / 8 / 10 / 12px. Nothing rounder except avatars and dots. */
+  --radius-sm: calc(var(--radius) * 0.5);
+  --radius-md: calc(var(--radius) * 0.75);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.25);
+  --radius-2xl: calc(var(--radius) * 1.5);
+  --radius-3xl: calc(var(--radius) * 1.5);
+  --radius-4xl: calc(var(--radius) * 1.5);
+
+  --shadow-card: var(--shadow-card);
+  --shadow-raised: var(--shadow-raised);
+  --ease-soft: var(--ease-out-soft);
+
+  --breakpoint-3xl: 112rem;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    @apply font-sans antialiased;
+    /* Reserve the scrollbar's space so pages don't shift sideways when content grows past the viewport. */
+    scrollbar-gutter: stable;
+    -webkit-tap-highlight-color: transparent;
+    text-rendering: optimizeLegibility;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-variant-numeric: lining-nums;
+  }
+  /* Headings: Bricolage at its optical size. Weight does the work so colour
+     can stay plain; size comes from the type-* utilities. */
+  h1, h2, h3, h4 {
+    @apply font-heading text-balance;
+    font-weight: 600;
+    letter-spacing: -0.012em;
+  }
+  h1, h2 {
+    font-weight: 650;
+    letter-spacing: -0.022em;
+  }
+  input, textarea {
+    caret-color: var(--brand-green);
+  }
+  p {
+    text-wrap: pretty;
+  }
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+  /* Route changes move focus to <main> for screen readers; no ring needed there. */
+  #main:focus {
+    outline: none;
+  }
+  /* Components that draw their own ring opt out of the outline above. */
+  [data-slot]:focus-visible {
+    outline: none;
+  }
+  ::selection {
+    background: var(--brand-tint-deep);
+    color: var(--brand-ink);
+  }
+
+  /*
+   * The one scrollbar style for the whole site. Touch screens keep their native
+   * overlay scrollbars, and forced-colours mode keeps the system's own.
+   * Chromium ignores ::-webkit-scrollbar once scrollbar-width or scrollbar-color
+   * is set, so the standard properties only go to browsers without the pseudo-element.
+   * The scrollbar-none and no-scrollbar utilities still win: they're in a later layer.
+   */
+  @media (hover: hover) and (pointer: fine) and (forced-colors: none) {
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track,
+    ::-webkit-scrollbar-corner {
+      background: transparent;
+    }
+    /* The clear border keeps the full 8px draggable while the thumb looks 6px wide. */
+    ::-webkit-scrollbar-thumb {
+      min-width: 32px;
+      min-height: 32px;
+      border: 1px solid transparent;
+      border-radius: 999px;
+      background-color: var(--scrollbar-thumb);
+      background-clip: padding-box;
+    }
+    ::-webkit-scrollbar-thumb:hover,
+    ::-webkit-scrollbar-thumb:active {
+      background-color: var(--scrollbar-thumb-hover);
+    }
+    @supports not selector(::-webkit-scrollbar) {
+      * {
+        scrollbar-width: thin;
+        scrollbar-color: var(--scrollbar-thumb) transparent;
+      }
+    }
+  }
+}
+
+@layer components {
+  .container-page {
+    @apply mx-auto w-full max-w-[84rem] px-4 sm:px-6 lg:px-8;
+  }
+  .surface {
+    @apply rounded-xl bg-card;
+    box-shadow: var(--shadow-card);
+  }
+  /* Numeral voice for prices and metrics: the heading face, firm and tight,
+     with tabular figures so amounts line up. Size comes from text-price,
+     text-metric or a heading utility. */
+  .font-display {
+    font-family: var(--font-heading);
+    font-weight: 650;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+  }
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* Screens with height to spare. The no-scroll auth pages only show optional text on these. */
+@custom-variant tall (@media (height >= 50rem));
+
+/*
+ * Heading scale. One step per role, mobile first, stepping up at sm (640px)
+ * and only the display size steps again at xl. Line height tightens as size
+ * grows; tracking is slightly negative and only on these large sizes.
+ */
+@utility type-display {
+  font-family: var(--font-heading);
+  font-size: 2.375rem; /* 38 */
+  line-height: 1.05;
+  font-weight: 660;
+  letter-spacing: -0.03em;
+  @media (width >= 40rem) {
+    font-size: 3rem; /* 48 */
+  }
+  @media (width >= 80rem) {
+    font-size: 3.5rem; /* 56 */
+  }
+}
+@utility type-page-title {
+  font-family: var(--font-heading);
+  font-size: 1.875rem; /* 30 */
+  line-height: 1.1;
+  font-weight: 650;
+  letter-spacing: -0.024em;
+  @media (width >= 40rem) {
+    font-size: 2.375rem; /* 38 */
+  }
+}
+@utility type-section-title {
+  font-family: var(--font-heading);
+  font-size: 1.5rem; /* 24 */
+  line-height: 1.15;
+  font-weight: 640;
+  letter-spacing: -0.02em;
+  @media (width >= 40rem) {
+    font-size: 1.875rem; /* 30 */
+  }
+}
+@utility type-subsection {
+  font-family: var(--font-heading);
+  font-size: 1.25rem; /* 20 */
+  line-height: 1.25;
+  font-weight: 600;
+  letter-spacing: -0.014em;
+  @media (width >= 40rem) {
+    font-size: 1.375rem; /* 22 */
+  }
+}
+@utility type-card-title {
+  font-family: var(--font-heading);
+  font-size: 1.125rem; /* 18 */
+  line-height: 1.3;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+@utility scrollbar-none {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* One deliberate entrance per page; everything else responds to input. */
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.animate-rise {
+  animation: rise-in 320ms var(--ease-out-soft) both;
+}
+
+/* Saving a place: a short press and settle so the tap reads as registered. */
+@keyframes save-pop {
+  0% {
+    transform: scale(0.8);
+  }
+  60% {
+    transform: scale(1.12);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.animate-save {
+  animation: save-pop 240ms var(--ease-out-soft);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Leaflet price markers (map provider styles kept next to tokens). */
+.abong-price-marker {
+  background: transparent;
+  border: none;
+}
+.abong-price-marker > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  transform: translate(-50%, -100%);
+  white-space: nowrap;
+  padding: 4px 9px;
+  border-radius: 6px;
+  background: #fff;
+  color: var(--brand-ink);
+  font: 650 12.5px/1.2 "Figtree Variable", sans-serif;
+  font-variant-numeric: tabular-nums;
+  box-shadow: 0 1px 2px rgb(23 25 28 / 0.22), 0 4px 10px -4px rgb(23 25 28 / 0.3);
+  border: 1px solid rgb(23 25 28 / 0.08);
+  transition: transform 160ms var(--ease-out-soft), background 160ms;
+}
+.abong-price-marker[data-active="true"] > span {
+  background: var(--brand-ink);
+  color: #fff;
+  transform: translate(-50%, -100%) scale(1.08);
+}
+.abong-price-marker[data-verified="true"] > span::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--brand-green);
+}
+.abong-price-marker[data-active="true"][data-verified="true"] > span::before {
+  background: var(--brand-amber);
+}
+.abong-place-marker > span {
+  display: block;
+  width: 14px;
+  height: 14px;
+  transform: translate(-50%, -50%);
+  border-radius: 999px;
+  background: var(--brand-amber);
+  border: 3px solid #fff;
+  box-shadow: 0 0 0 1px var(--brand-ink);
+}
+.leaflet-container {
+  font-family: "Figtree Variable", sans-serif;
+  background: #ececE8;
+}
+/* Quieter basemap so price markers carry the colour. */
+.leaflet-tile-pane {
+  filter: grayscale(0.85) brightness(1.03) contrast(0.92);
+}
+.abong-price-marker:hover,
+.abong-price-marker[data-active="true"] {
+  z-index: 1000 !important;
+}
+.leaflet-control-attribution {
+  font-size: 10px;
+}
+/* The credit link has to read as a link without relying on colour. */
+.leaflet-container .leaflet-control-attribution a {
+  text-decoration: underline;
+}

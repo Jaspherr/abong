@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /landlord/dashboard
+Disallow: /landlord/properties
+Disallow: /landlord/listings
+Disallow: /landlord/inquiries
+Disallow: /landlord/viewings
+Disallow: /landlord/verification
+Disallow: /landlord/profile
+Disallow: /inquiries
+Disallow: /viewings
+Disallow: /profile

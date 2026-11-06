@@ -1,0 +1,161 @@
+import type { ActivityEvent, Report, VerificationRequest } from "@/types"
+import { daysAgo, hoursAgo } from "./time"
+
+export const reports: Report[] = [
+  {
+    id: "r-1",
+    listingId: "poblacion-studio-urdaneta",
+    reporterId: "u-renter-2",
+    reason: "scam-concern",
+    details: "The contact asked me to send a ₱3,000 reservation fee through GCash before I could see the unit.",
+    status: "investigating",
+    createdAt: daysAgo(12),
+  },
+  {
+    id: "r-2",
+    listingId: "palaming-bedspace",
+    reporterId: "u-renter-4",
+    reason: "incorrect-information",
+    details: "Listing says Wi-Fi is available but the boarders said it's been disconnected for two months.",
+    status: "open",
+    createdAt: hoursAgo(9),
+  },
+  {
+    id: "r-3",
+    listingId: "caranglaan-house",
+    reporterId: null,
+    reason: "unavailable-property",
+    details: "Neighbour says this house was rented out last month.",
+    status: "open",
+    createdAt: daysAgo(1, 3),
+  },
+  {
+    id: "r-4",
+    listingId: "manaois-dorm",
+    reporterId: "u-renter-6",
+    reason: "duplicate-listing",
+    details: "Same photos as another dorm listing in Bayambang.",
+    status: "open",
+    createdAt: daysAgo(2),
+  },
+  {
+    id: "r-5",
+    listingId: "bautista-apartments",
+    reporterId: "u-renter-10",
+    reason: "other",
+    details: "Price shown is ₱7,500 but I was quoted ₱8,000 on the phone.",
+    status: "resolved",
+    resolutionNote: "Landlord corrected the price on Unit A2.",
+    createdAt: daysAgo(18),
+  },
+  {
+    id: "r-6",
+    listingId: "cayabyab-house",
+    reporterId: "u-renter-8",
+    reason: "suspicious-landlord",
+    details: "Landlord would not give a full address until after payment.",
+    status: "dismissed",
+    resolutionNote: "Address confirmed with barangay; landlord shares exact location after viewing is booked, which is allowed.",
+    createdAt: daysAgo(25),
+  },
+]
+
+export const verificationRequests: VerificationRequest[] = [
+  {
+    id: "vr-1",
+    landlordId: "l2",
+    type: "property",
+    propertyId: "bautista-apartments",
+    status: "pending",
+    submittedAt: daysAgo(1, 2),
+    documents: [
+      { label: "Barangay business permit", fileName: "demo-barangay-permit.pdf" },
+      { label: "Recent electric bill", fileName: "demo-electric-bill.jpg" },
+    ],
+  },
+  {
+    id: "vr-2",
+    landlordId: "l4",
+    type: "identity",
+    status: "pending",
+    submittedAt: hoursAgo(20),
+    documents: [
+      { label: "Government ID (front)", fileName: "demo-id-front.jpg" },
+      { label: "Selfie holding ID", fileName: "demo-selfie.jpg" },
+    ],
+  },
+  {
+    id: "vr-3",
+    landlordId: "l6",
+    type: "identity",
+    status: "pending",
+    submittedAt: daysAgo(3),
+    documents: [{ label: "Government ID (front)", fileName: "demo-id-front.jpg" }],
+  },
+  {
+    id: "vr-4",
+    landlordId: "l6",
+    type: "contact",
+    status: "pending",
+    submittedAt: daysAgo(3),
+    documents: [{ label: "Mobile number OTP", fileName: "otp-confirmed" }],
+  },
+  {
+    id: "vr-5",
+    landlordId: "l1",
+    type: "property",
+    propertyId: "santos-lucao-apartment",
+    status: "pending",
+    submittedAt: hoursAgo(26),
+    documents: [{ label: "Transfer certificate of title", fileName: "demo-title.pdf" }],
+  },
+  {
+    id: "vr-6",
+    landlordId: "l9",
+    type: "property",
+    propertyId: "caranglaan-house",
+    status: "needs-update",
+    submittedAt: daysAgo(16),
+    reviewedAt: daysAgo(14),
+    reviewerNote: "The utility bill is under a different name. Please upload proof that you manage this property.",
+    documents: [{ label: "Water bill", fileName: "demo-water-bill.jpg" }],
+  },
+  {
+    id: "vr-7",
+    landlordId: "l3",
+    type: "identity",
+    status: "verified",
+    submittedAt: daysAgo(500),
+    reviewedAt: daysAgo(499),
+    documents: [{ label: "Government ID (front)", fileName: "demo-id-front.jpg" }],
+  },
+  {
+    id: "vr-8",
+    landlordId: "l2",
+    type: "property",
+    propertyId: "poblacion-studio-urdaneta",
+    status: "rejected",
+    submittedAt: daysAgo(13),
+    reviewedAt: daysAgo(12),
+    reviewerNote: "Documents do not match the listed address.",
+    documents: [{ label: "Lease contract", fileName: "demo-lease.pdf" }],
+  },
+]
+
+export const activity: ActivityEvent[] = [
+  { id: "a1", kind: "listing-submitted", title: "Estanza Apartment submitted", detail: "Gloria Ferrer, Lingayen", at: hoursAgo(2), href: "/admin/listings?review=lingayen-beach-apartment" },
+  { id: "a2", kind: "report-filed", title: "Report on Palaming Bedspace", detail: "Incorrect information", at: hoursAgo(9), href: "/admin/reports" },
+  { id: "a3", kind: "verification-submitted", title: "Identity verification from Joel Manaois", detail: "2 documents", at: hoursAgo(20), href: "/admin/verifications" },
+  { id: "a4", kind: "signup", title: "Bea Gonzales joined as a renter", detail: "Binmaley", at: daysAgo(1) },
+  { id: "a5", kind: "listing-submitted", title: "Alaminos Student Rooms resubmitted", detail: "Arnel Cayabyab, Alaminos", at: daysAgo(1, 4), href: "/admin/listings?review=psu-alaminos-rooms" },
+  { id: "a6", kind: "listing-approved", title: "Perez Boulevard Suites updated", detail: "Availability confirmed", at: daysAgo(1, 8) },
+  { id: "a7", kind: "signup", title: "Mark Anthony Ramos joined as a renter", detail: "Bayambang", at: daysAgo(2) },
+]
+
+/** 12 weeks of platform activity for admin charts (oldest first). */
+export const weeklySeries = {
+  signups: [38, 42, 40, 51, 47, 58, 63, 60, 72, 69, 81, 88],
+  inquiries: [120, 131, 128, 150, 162, 158, 171, 190, 204, 199, 221, 236],
+  newListings: [9, 11, 8, 14, 12, 10, 15, 13, 17, 16, 14, 19],
+  viewings: [34, 30, 38, 41, 45, 44, 52, 50, 58, 61, 63, 70],
+}
