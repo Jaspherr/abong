@@ -1,24 +1,29 @@
 # Abong
 
-Long-term rental discovery for **Pangasinan, Philippines**: boarding houses, bedspaces, rooms, dormitories, studios, apartments, condos and family homes, rented monthly, per semester or yearly.
+Abong is a long-term rental marketplace for Pangasinan, Philippines. *Abong* is the Pangasinan word for "house".
 
-*Abong* is Pangasinan for "house". The brand is a temporary working identity; every brand value lives in one place (see [docs/design-system.md](docs/design-system.md)).
+It helps students, young workers and families find a place to live near their school or work, from bedspaces and boarding house rooms to apartments and family homes. Stays are monthly, per semester or yearly, not short-term travel.
 
-> **Demo build.** All listings, landlords and people are fictional. Place, school and landmark names are real; their coordinates are approximate. Nothing is persisted to a server and no payments, documents or identities are collected.
+Renters can see the full cost before moving in, including rent, advance, deposit and an estimated move-in total. They can ask landlords questions and request a viewing without paying anything upfront. Abong never handles money: payments happen directly between renter and landlord, after the renter has seen the place.
+
+Landlords can list their properties and units, answer inquiries, schedule viewings and get verified. Admins moderate listings, review verifications and handle reports.
+
+> **Demo build.** All listings, landlords and people are fictional. Place, school and landmark names are real, but their coordinates are approximate and walking times are estimates. Sign-in is mocked, demo data stays in your browser, and no payments, documents or identities are collected.
 
 ## What's in the repo
 
 ```text
 apps/
-  web/       React + Vite web app: public marketplace, renter, landlord and admin areas  ← implemented
-  mobile/    Reserved for the React Native (Expo) app                                  ← placeholder
-  admin/     Reserved in case the admin console is extracted from the web app          ← placeholder
-backend/     Reserved for the API                                                       ← placeholder
-shared/      Reserved for code shared by web, mobile and backend                        ← placeholder
-docs/        Architecture, design system, domain model, backend integration guide
+  web/       The web app: public marketplace, renter, landlord and admin areas
+  mobile/    Placeholder for a future mobile app
+  admin/     Placeholder in case the admin console becomes its own app
+backend/     Placeholder for the future API
+shared/      Placeholder for code shared across apps
+docs/        Architecture, design system, domain model, backend integration and product audit
+CLAUDE.md    Working notes for AI agents and contributors
 ```
 
-Only `apps/web` is part of the npm workspace today. The placeholders contain READMEs describing what will live there.
+Only `apps/web` is built so far, using React, TypeScript, Vite and Tailwind CSS. It runs on mock data rather than a real server. Each placeholder folder has a short README explaining what it's for.
 
 ## Quick start
 
