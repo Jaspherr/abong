@@ -47,7 +47,7 @@ export function RenterGate({ action }: { action: string }) {
         </Button>
       </div>
       {DEMO_MODE && (
-        <button type="button" onClick={continueAsRenter} className="text-sm font-medium text-primary underline-offset-4 hover:underline">
+        <button type="button" onClick={continueAsRenter} className="text-sm font-medium text-primary underline-offset-4 underline decoration-transparent transition-colors hover:decoration-current">
           Continue with the demo renter account
         </button>
       )}

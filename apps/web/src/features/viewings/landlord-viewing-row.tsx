@@ -23,7 +23,7 @@ export function LandlordViewingRow({ viewing: v }: { viewing: ViewingWithContext
         </div>
         <Link to={PATHS.landlord.property(v.listing.id)} className="group/place flex w-fit max-w-full items-center gap-2 text-meta text-muted-foreground hover:text-foreground">
           <Photo src={v.listing.photos[0]?.src} alt="" className="size-7 shrink-0 rounded-md" />
-          <span className="truncate underline-offset-4 group-hover/place:underline">
+          <span className="truncate underline-offset-4 underline decoration-transparent transition-colors group-hover/place:decoration-current">
             {v.listing.name}
             {v.unitName ? `, ${v.unitName}` : ""}
           </span>

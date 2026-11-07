@@ -1,3 +1,4 @@
+
 import { useQuery } from "@tanstack/react-query"
 import { Link } from "react-router"
 import { PageHeader } from "@/components/common/page-header"
@@ -11,13 +12,26 @@ import { inquiriesService } from "@/services"
 
 function RenterInquiriesPage() {
   useDocumentTitle("Inquiries")
+
   const { user } = useAuth()
   const userId = user!.id
-  const { data, isPending } = useQuery({ queryKey: qk.renterInquiries(userId), queryFn: () => inquiriesService.listForRenter(userId) })
+
+  const { data, isPending } = useQuery({
+    queryKey: qk.renterInquiries(userId),
+    queryFn: () => inquiriesService.listForRenter(userId),
+  })
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Inquiries" description="Your conversations with landlords. Replies usually arrive within a day." />
+      <PageHeader
+        title={
+          <span className="type-page-title text-foreground">
+            Inquiries<span className="text-primary">.</span>
+          </span>
+        }
+        description="Your conversations with landlords. Replies usually arrive within a day."
+      />
+
       <Inbox
         threads={data}
         isPending={isPending}
@@ -25,7 +39,9 @@ function RenterInquiriesPage() {
         currentUserId={userId}
         emptyAction={
           <Button asChild>
-            <Link to={PATHS.search}>Find a place</Link>
+            <Link to={PATHS.search}>
+              Find a place
+            </Link>
           </Button>
         }
       />

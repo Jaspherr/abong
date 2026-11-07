@@ -96,7 +96,7 @@ function LoginPage() {
             />
           </FormField>
           {/* Sits on the label's row to save height, but after the input in tab order. */}
-          <Link to={PATHS.forgotPassword} className="absolute top-0 right-0 text-sm leading-none font-medium text-primary underline-offset-4 hover:underline">
+          <Link to={PATHS.forgotPassword} className="absolute top-0 right-0 text-sm leading-none font-medium text-primary underline-offset-4 underline decoration-transparent transition-colors hover:decoration-current">
             Forgot password?
           </Link>
         </div>
@@ -109,7 +109,7 @@ function LoginPage() {
 
       <p className="text-center text-sm text-muted-foreground">
         New to Abong?{" "}
-        <Link to={`${PATHS.register}${next ? `?next=${encodeURIComponent(next)}` : ""}`} className="font-semibold text-primary underline-offset-4 hover:underline">
+        <Link to={`${PATHS.register}${next ? `?next=${encodeURIComponent(next)}` : ""}`} className="font-semibold text-primary underline-offset-4 underline decoration-transparent transition-colors hover:decoration-current">
           Create an account
         </Link>
       </p>

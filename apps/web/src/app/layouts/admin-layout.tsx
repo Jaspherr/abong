@@ -63,7 +63,7 @@ function RailLink({ item, count }: { item: RailItem; count?: number }) {
       end={end}
       className={({ isActive }) =>
         cn(
-          "group relative flex min-h-10 items-center gap-3 rounded-md px-3 text-meta outline-none transition-colors duration-150",
+          "group relative flex min-h-10 items-center gap-3 rounded-md px-3 text-meta outline-none transition-colors",
           "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none",
           isActive
             ? "bg-muted/65 font-semibold text-foreground"
@@ -76,14 +76,14 @@ function RailLink({ item, count }: { item: RailItem; count?: number }) {
           <span
             aria-hidden="true"
             className={cn(
-              "absolute inset-y-2 left-0 w-0.5 rounded-full transition-colors duration-150 motion-reduce:transition-none",
+              "absolute inset-y-2 left-0 w-0.5 rounded-full transition-colors motion-reduce:transition-none",
               isActive ? "bg-primary" : "bg-transparent",
             )}
           />
           <Icon
             className={cn(
-              "size-4 shrink-0 transition-colors duration-150 motion-reduce:transition-none",
-              isActive ? "text-primary" : "text-muted-foreground/75 group-hover:text-foreground",
+              "size-4 shrink-0 transition-colors motion-reduce:transition-none",
+              isActive ? "text-primary" : "text-muted-foreground/75 transition-colors group-hover:text-foreground",
             )}
             strokeWidth={1.8}
             aria-hidden="true"
@@ -96,7 +96,7 @@ function RailLink({ item, count }: { item: RailItem; count?: number }) {
             <span
               className={cn(
                 "inline-flex min-h-5 min-w-5 shrink-0 items-center justify-center rounded-md px-1.5 text-caption font-semibold leading-none tabular-nums",
-                isActive ? "bg-background text-foreground" : "bg-muted text-muted-foreground group-hover:text-foreground",
+                isActive ? "bg-background text-foreground" : "bg-muted text-muted-foreground transition-colors group-hover:text-foreground",
               )}
               aria-hidden="true"
             >
@@ -147,9 +147,9 @@ export function AdminLayout() {
             <div className="mt-(--rail-gap) border-t border-border/70 pt-4">
               <Link
                 to="/"
-                className="group flex min-h-10 items-center gap-3 rounded-md px-3 text-meta font-medium text-muted-foreground outline-none transition-colors duration-150 hover:bg-muted/40 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none"
+                className="group flex min-h-10 items-center gap-3 rounded-md px-3 text-meta font-medium text-muted-foreground outline-none transition-colors hover:bg-muted/40 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none"
               >
-                <ExternalLink className="size-4 shrink-0 text-muted-foreground/75 group-hover:text-foreground" strokeWidth={1.8} aria-hidden="true" />
+                <ExternalLink className="size-4 shrink-0 text-muted-foreground/75 transition-colors group-hover:text-foreground" strokeWidth={1.8} aria-hidden="true" />
                 <span className="flex-1">View public site</span>
               </Link>
             </div>

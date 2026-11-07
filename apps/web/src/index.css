@@ -176,6 +176,10 @@
   --shadow-raised: var(--shadow-raised);
   --ease-soft: var(--ease-out-soft);
 
+  /* What a bare transition-colors or transition-transform gets, so hovers share one feel. */
+  --default-transition-duration: 150ms;
+  --default-transition-timing-function: var(--ease-out-soft);
+
   --breakpoint-3xl: 112rem;
 }
 
@@ -214,6 +218,16 @@
   button:not(:disabled),
   [role="button"]:not(:disabled) {
     cursor: pointer;
+  }
+  /* Anything you can hover fades its colours rather than snapping. A transition-* utility replaces this. */
+  a,
+  button,
+  label,
+  summary,
+  [role="button"] {
+    transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+    transition-duration: 150ms;
+    transition-timing-function: var(--ease-out-soft);
   }
   :focus-visible {
     outline: 2px solid var(--ring);
@@ -351,6 +365,19 @@
   letter-spacing: -0.01em;
 }
 
+/*
+ * A homepage section fills the screen below the sticky header. Small viewport
+ * height, so the mobile URL bar can't shift the layout; capped so a large monitor
+ * doesn't turn a short section into empty space. It's a minimum: content can grow past it.
+ */
+@utility min-h-section {
+  min-height: min(calc(100svh - var(--header-height)), 64rem);
+}
+/* The part of a section that stretches to share that height, leaving room for its padding. */
+@utility min-h-section-body {
+  min-height: min(calc(100svh - var(--header-height) - 10rem), 44rem);
+}
+
 @utility scrollbar-none {
   scrollbar-width: none;
   &::-webkit-scrollbar {
@@ -419,7 +446,7 @@
   font-variant-numeric: tabular-nums;
   box-shadow: 0 1px 2px rgb(23 25 28 / 0.22), 0 4px 10px -4px rgb(23 25 28 / 0.3);
   border: 1px solid rgb(23 25 28 / 0.08);
-  transition: transform 160ms var(--ease-out-soft), background 160ms;
+  transition: transform 160ms var(--ease-out-soft), background-color 160ms var(--ease-out-soft), color 160ms var(--ease-out-soft);
 }
 .abong-price-marker[data-active="true"] > span {
   background: var(--brand-ink);

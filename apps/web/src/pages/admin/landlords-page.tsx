@@ -41,7 +41,7 @@ function ReportCount({ count }: { count: number }) {
   return (
     <Link
       to={PATHS.admin.reports}
-      className="inline-flex items-center gap-1.5 font-medium text-destructive underline-offset-4 transition-colors hover:underline focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none"
+      className="inline-flex items-center gap-1.5 font-medium text-destructive underline-offset-4 transition-colors underline decoration-transparent hover:decoration-current focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       aria-label={`${pluralize(count, "report")}. Open reports`}
     >
       <Flag className="size-3.5 shrink-0" aria-hidden="true" />
@@ -57,7 +57,7 @@ function LandlordActions({ profile }: { profile: AdminLandlordRow["profile"] }) 
       <Button
         variant="ghost"
         size="sm"
-        className="h-9 gap-1.5 px-2.5 text-xs text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none"
+        className="h-9 gap-1.5 px-2.5 text-xs text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
         asChild
       >
         <Link to={PATHS.admin.verifications} aria-label={`Verifications queue, opened from ${profile.displayName}`}>
@@ -68,7 +68,7 @@ function LandlordActions({ profile }: { profile: AdminLandlordRow["profile"] }) 
       <Button
         variant="ghost"
         size="sm"
-        className="h-9 gap-1.5 px-2.5 text-xs font-medium text-foreground transition-colors duration-150 hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none"
+        className="h-9 gap-1.5 px-2.5 text-xs font-medium text-foreground hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
         asChild
       >
         <Link to={PATHS.landlordProfile(profile.id)} aria-label={`View public profile of ${profile.displayName}`}>
@@ -273,7 +273,7 @@ function AdminLandlordsPage() {
                     {rows.map(({ profile, user, propertyCount, activeListings, openReports }) => (
                       <TableRow
                         key={profile.id}
-                        className="border-border/70 transition-colors duration-150 hover:bg-muted/35 motion-reduce:transition-none"
+                        className="border-border/70 transition-colors hover:bg-muted/35"
                       >
                         <TableCell className="max-w-0 min-w-56 py-4 pl-3 whitespace-normal sm:pl-4">
                           <div className="flex min-w-0 items-center gap-3">

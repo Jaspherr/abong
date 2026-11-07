@@ -95,7 +95,7 @@ export function GulfMap({ towns, className }: { towns: MunicipalityWithCount[]; 
             aria-label={`${town.name}: ${pluralize(town.listingCount, "listing")}${town.priceFrom ? `, from ${formatPeso(town.priceFrom)}` : ""}`}
           >
             <span
-              className="block rounded-full border-[2.5px] border-white bg-primary shadow-[0_1px_3px_rgb(20_37_43/0.35)] transition-transform duration-200 ease-soft group-hover:scale-125 group-focus-visible:scale-125"
+              className="block rounded-full border-[2.5px] border-white bg-primary shadow-[0_1px_3px_rgb(20_37_43/0.35)] transition-transform motion-safe:group-hover:scale-115 motion-safe:group-focus-visible:scale-115"
               style={{ width: size, height: size }}
             />
             <span
@@ -105,7 +105,7 @@ export function GulfMap({ towns, className }: { towns: MunicipalityWithCount[]; 
               )}
             >
               <span className="rounded-sm bg-[#e9eee9]/90 px-0.5">{town.name.replace(" City", "")}</span>
-              <span className="ml-1 hidden rounded-sm bg-ink px-1.5 py-0.5 text-caption font-semibold text-white group-hover:inline-block group-focus-visible:inline-block">
+              <span className="ml-1 hidden rounded-sm bg-ink px-1.5 py-0.5 text-caption font-semibold text-white transition-opacity group-hover:inline-block group-focus-visible:inline-block starting:opacity-0">
                 {town.listingCount}
               </span>
             </span>

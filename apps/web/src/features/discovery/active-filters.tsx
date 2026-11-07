@@ -46,7 +46,7 @@ export function ActiveFilters({ filters, onChange }: { filters: SearchFilters; o
           <button
             type="button"
             onClick={() => onChange(chip.remove)}
-            className="inline-flex h-8 items-center gap-1.5 rounded-md bg-secondary pr-2 pl-2.5 text-meta font-semibold text-secondary-foreground transition-colors duration-150 hover:bg-[color-mix(in_oklch,var(--secondary),var(--foreground)_6%)]"
+            className="inline-flex h-8 items-center gap-1.5 rounded-md bg-secondary pr-2 pl-2.5 text-meta font-semibold text-secondary-foreground transition-colors hover:bg-[color-mix(in_oklch,var(--secondary),var(--foreground)_6%)]"
             aria-label={`Remove filter: ${chip.label}`}
           >
             {chip.label}

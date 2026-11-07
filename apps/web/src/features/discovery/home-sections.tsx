@@ -1,6 +1,7 @@
-import { useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import {
   ArrowUpRight,
+  BadgeCheck,
   Check,
   GraduationCap,
   MapPinned,
@@ -10,13 +11,11 @@ import { Link } from "react-router";
 import { SectionHeading } from "@/components/common/page-header";
 import { Photo } from "@/components/common/photo";
 import { EmptyState, ErrorState } from "@/components/feedback/states";
-import { ListingGridSkeleton } from "@/components/feedback/skeletons";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { PATHS } from "@/constants/app";
 import { PROPERTY_TYPE_ORDER, PROPERTY_TYPES } from "@/constants/listing";
-import { ListingCard } from "@/features/listings/listing-card";
-import { studentTypesFirst } from "@/features/listings/listing-utils";
+import { splitFeaturedListings } from "@/features/listings/listing-utils";
 import {
   useFeaturedListings,
   useMunicipalities,
@@ -25,14 +24,24 @@ import {
 import { formatPeso, pluralize } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { places } from "@/services";
+import {
+  FeaturedLead,
+  FeaturedRow,
+  FeaturedSkeleton,
+} from "./featured-listings";
 import { GulfMap } from "./gulf-map";
+import { PropertyTypeIllustration } from "./property-type-illustration";
 import { searchUrl } from "./search-params";
+import { useIdleShowcase } from "./use-idle-showcase";
 
 /** A taste of the list; the full one lives on the schools page. */
 const SCHOOL_PREVIEW = 6;
 
-/** The space above a section that sits directly on the page ground. */
-const sectionSpacing = "pt-20 sm:pt-24 lg:pt-28";
+/** The space around a section on the page ground. Neighbours' padding adds up to the gap between them. */
+const sectionSpacing = "py-10 sm:py-12 lg:py-14";
+
+/** At least a screen tall, with the content centred in whatever height is left over. */
+const fullScreen = "flex min-h-section flex-col justify-center";
 
 const textLink =
   "text-sm font-semibold underline decoration-ink/25 underline-offset-4 transition-colors hover:text-primary hover:decoration-primary";
@@ -124,7 +133,7 @@ function SubsectionHeading({
   );
 }
 
-/** Schools as a dense two-column index: name, campus, count. */
+/** Schools displayed as a minimal two-column directory. */
 export function NearSchoolsSection() {
   const { data, isPending } = useUniversities();
   const schools = data ?? [];
@@ -133,15 +142,20 @@ export function NearSchoolsSection() {
     <section
       id="near-schools"
       aria-labelledby="near-schools-title"
-      className={cn("container-page scroll-mt-24", sectionSpacing)}
+      className={cn("container-page scroll-mt-24", fullScreen, sectionSpacing)}
     >
-      <div className="grid grid-cols-1 items-start gap-10 lg:grid-cols-[minmax(0,19rem)_minmax(0,1fr)] lg:gap-12 xl:grid-cols-[minmax(0,24rem)_minmax(0,1fr)] xl:gap-16">
-        <div className="lg:sticky lg:top-28">
+      <div className="grid grid-cols-1 items-start gap-8 lg:min-h-section-body lg:grid-cols-[minmax(0,19rem)_minmax(0,1fr)] lg:items-stretch lg:gap-10 xl:grid-cols-[minmax(0,23rem)_minmax(0,1fr)] xl:gap-14">
+        {/* LEFT — SECTION INTRODUCTION */}
+        <div className="min-w-0 lg:self-center">
           <SectionEyebrow
             className="mb-4 gap-3"
             marker={
-              <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
-                <GraduationCap className="size-5" aria-hidden="true" />
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <GraduationCap
+                  className="size-4.5"
+                  strokeWidth={1.7}
+                  aria-hidden="true"
+                />
               </span>
             }
           >
@@ -153,14 +167,15 @@ export function NearSchoolsSection() {
             <span className="block text-primary">Study easier.</span>
           </h2>
 
-          <p className="mt-4 max-w-sm text-body text-muted-foreground">
-            Find a place near your campus. Distances are measured from each
-            school, so you can compare a short walk with a longer commute before
-            you visit.
+          <p className="mt-4 max-w-sm text-sm leading-7 text-muted-foreground">
+            Find a place near your campus. Compare nearby rentals and travel
+            distances before you visit.
           </p>
         </div>
 
-        <div className="min-w-0">
+        {/* RIGHT — SCHOOL DIRECTORY */}
+        <div className="flex min-w-0 flex-col">
+          {/* Directory header */}
           <SubsectionHeading
             className="mb-5 border-b border-border pb-4"
             label="Find your campus"
@@ -172,62 +187,91 @@ export function NearSchoolsSection() {
             }
           />
 
+          {/* LOADING */}
           {isPending ? (
             <ul
-              className="grid grid-cols-1 gap-3 sm:grid-cols-2"
+              className="grid grid-cols-1 border-t border-border/70 sm:grid-cols-2 lg:flex-1 lg:auto-rows-fr"
               aria-label="Loading schools"
             >
               {Array.from({ length: SCHOOL_PREVIEW }, (_, index) => (
                 <li
                   key={index}
-                  className="rounded-2xl border border-border bg-card p-5 sm:p-6"
+                  className={cn(
+                    "border-b border-border/70 py-5",
+                    "sm:py-6 sm:odd:pr-5 sm:even:border-l",
+                    "sm:even:pl-5 lg:odd:pr-7 lg:even:pl-7",
+                  )}
                 >
                   <Skeleton className="h-5 w-3/4" />
-                  <Skeleton className="mt-2 h-4 w-1/2" />
-                  <Skeleton className="mt-6 h-9 w-28" />
+                  <Skeleton className="mt-2 h-3.5 w-1/2" />
+                  <Skeleton className="mt-6 h-4 w-24" />
                 </li>
               ))}
             </ul>
           ) : schools.length === 0 ? (
+            /* EMPTY STATE */
             <EmptyState
               compact
               headingLevel="h3"
               icon={GraduationCap}
               title="No schools listed yet"
               description="School-based browsing will appear here once campus information becomes available."
-              className="rounded-2xl border border-dashed border-border"
+              className="border-y border-border"
             />
           ) : (
-            <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            /* SCHOOL INDEX */
+            <ul className="grid grid-cols-1 border-t border-border/70 sm:grid-cols-2 lg:flex-1 lg:auto-rows-fr">
               {schools.slice(0, SCHOOL_PREVIEW).map((school) => (
-                <li key={school.id} className="min-w-0">
+                <li
+                  key={school.id}
+                  className={cn(
+                    "group min-w-0 border-b border-border/70",
+                    "sm:odd:pr-5 sm:even:border-l sm:even:pl-5",
+                    "lg:odd:pr-7 lg:even:pl-7",
+                  )}
+                >
                   <Link
                     to={PATHS.near(school.slug)}
-                    className="group flex h-full flex-col rounded-2xl border border-border bg-card p-5 transition-colors hover:border-primary/40 sm:p-6"
+                    className={cn(
+                      "flex h-full min-w-0 flex-col",
+                      "py-5 sm:py-6",
+                      "transition-colors",
+                      "focus-visible:rounded-sm focus-visible:outline-2",
+                      "focus-visible:outline-offset-2 focus-visible:outline-ring",
+                    )}
                   >
-                    <h4 className="line-clamp-2 type-card-title transition-colors group-hover:text-primary">
-                      {school.shortName}
-                    </h4>
-                    <p className="mt-1.5 line-clamp-2 text-meta text-muted-foreground">
+                    {/* School name and link indicator */}
+                    <div className="flex items-start justify-between gap-4">
+                      <h4 className="line-clamp-2 font-heading text-[1.1rem] font-semibold leading-snug tracking-[-0.025em] text-foreground transition-colors group-hover:text-primary sm:text-[1.2rem]">
+                        {school.shortName}
+                      </h4>
+
+                      <ArrowUpRight
+                        className="mt-0.5 size-4 shrink-0 text-muted-foreground/60 transition-[color,translate] group-hover:text-primary motion-safe:group-hover:translate-x-0.5 motion-safe:group-hover:-translate-y-0.5"
+                        strokeWidth={1.6}
+                        aria-hidden="true"
+                      />
+                    </div>
+
+                    {/* Campus and town */}
+                    <p className="mt-2 line-clamp-2 text-xs leading-5 text-muted-foreground sm:text-sm">
                       {school.campus},{" "}
                       {places.municipalityName(school.municipalityId)}
                     </p>
 
-                    <div className="mt-auto flex items-end justify-between gap-3 pt-6">
-                      <div className="min-w-0">
-                        <span className="block text-caption text-muted-foreground">
-                          Nearby listings
-                        </span>
-                        <span className="mt-0.5 block text-body font-semibold tabular-nums">
-                          {pluralize(school.listingCount, "place")}
-                        </span>
-                      </div>
-                      <span className="inline-flex shrink-0 items-center gap-1 text-meta font-semibold text-primary">
-                        Explore
-                        <ArrowUpRight
-                          className="size-4 transition-transform motion-safe:group-hover:translate-x-0.5 motion-safe:group-hover:-translate-y-0.5"
-                          aria-hidden="true"
-                        />
+                    {/* Nearby listing count */}
+                    <div className="mt-auto flex items-center gap-2 pt-5">
+                      <span
+                        aria-hidden="true"
+                        className="size-1.5 rounded-full bg-primary/70"
+                      />
+
+                      <span className="text-xs font-medium text-muted-foreground">
+                        Nearby listings
+                      </span>
+
+                      <span className="ml-auto shrink-0 text-xs font-semibold text-foreground tabular-nums">
+                        {pluralize(school.listingCount, "place")}
                       </span>
                     </div>
                   </Link>
@@ -236,12 +280,27 @@ export function NearSchoolsSection() {
             </ul>
           )}
 
+          {/* VIEW ALL SCHOOLS */}
           {!isPending && schools.length > SCHOOL_PREVIEW && (
-            <p className="mt-5">
-              <Link to={PATHS.schools} className={textLink}>
+            <div className="flex justify-end pt-5">
+              <Link
+                to={PATHS.schools}
+                className={cn(
+                  "group inline-flex items-center gap-2",
+                  "text-sm font-medium text-foreground",
+                  "transition-colors hover:text-primary",
+                  "focus-visible:rounded-sm focus-visible:outline-2",
+                  "focus-visible:outline-offset-4 focus-visible:outline-ring",
+                )}
+              >
                 See all {schools.length} schools
+                <ArrowUpRight
+                  className="size-4 transition-transform motion-safe:group-hover:translate-x-0.5 motion-safe:group-hover:-translate-y-0.5"
+                  strokeWidth={1.7}
+                  aria-hidden="true"
+                />
               </Link>
-            </p>
+            </div>
           )}
         </div>
       </div>
@@ -249,17 +308,22 @@ export function NearSchoolsSection() {
   );
 }
 
-/** A plain, even grid so listings stay easy to compare. */
+/**
+ * One lead listing beside a ruled list. The hero already shows two featured
+ * places, so this section starts from the ones it hasn't shown.
+ */
 export function FeaturedListingsSection() {
-  const { data: raw, isPending, isError, refetch } = useFeaturedListings();
-  const data = studentTypesFirst(raw ?? []);
+  const { data, isPending, isError, refetch } = useFeaturedListings();
+  const [lead, ...others] = splitFeaturedListings(data ?? []).rest;
+
   return (
     <section
-      className="container-page pt-4 sm:pt-6"
+      className={cn(
+        "container-page pt-4 pb-10 sm:pt-6 sm:pb-12 lg:pb-14",
+        fullScreen,
+      )}
       aria-labelledby="featured-title"
     >
-      <SectionEyebrow>Featured places</SectionEyebrow>
-
       <SectionHeading
         size="large"
         titleId="featured-title"
@@ -277,20 +341,47 @@ export function FeaturedListingsSection() {
 
       <div className="mt-8 lg:mt-10">
         {isPending ? (
-          <ListingGridSkeleton count={6} />
+          <FeaturedSkeleton />
         ) : isError ? (
           <ErrorState onRetry={() => refetch()} />
+        ) : !lead ? (
+          <EmptyState
+            compact
+            headingLevel="h3"
+            icon={BadgeCheck}
+            title="No verified places open right now"
+            description="Verified places with open rooms will appear here. You can still browse everything listed in Pangasinan."
+            action={
+              <Button asChild variant="outline">
+                <Link to={searchUrl({})}>Browse all places</Link>
+              </Button>
+            }
+            className="border-y border-border"
+          />
         ) : (
-          // Phones swipe through a strip; wider screens get an even grid.
-          <div className="-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-2 scrollbar-none sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-x-6 sm:gap-y-10 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-3">
-            {data.map((listing) => (
-              <ListingCard
-                key={listing.id}
-                listing={listing}
-                className="w-[82%] shrink-0 snap-start sm:w-auto"
-              />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-10 xl:gap-14">
+              <div
+                className={cn(
+                  "min-w-0",
+                  others.length > 0 ? "lg:col-span-7" : "lg:col-span-12",
+                )}
+              >
+                <FeaturedLead listing={lead} />
+              </div>
+              {others.length > 0 && (
+                <div className="min-w-0 divide-y divide-border border-t border-border pt-5 lg:col-span-5 lg:grid lg:auto-rows-fr lg:border-t-0 lg:pt-0">
+                  {others.map((listing) => (
+                    <FeaturedRow key={listing.id} listing={listing} />
+                  ))}
+                </div>
+              )}
+            </div>
+            <p className="mt-8 text-caption text-muted-foreground">
+              Move-in estimates add advance and deposit on the cheapest open
+              unit. The landlord confirms the final amount.
+            </p>
+          </>
         )}
       </div>
     </section>
@@ -307,7 +398,7 @@ export function TownsSection() {
 
   return (
     <section
-      className={cn("container-page", sectionSpacing)}
+      className={cn("container-page", fullScreen, sectionSpacing)}
       aria-labelledby="towns-title"
     >
       <SplitSectionIntro
@@ -433,15 +524,20 @@ export function TownsSection() {
 }
 
 export function CategoriesSection() {
-  const [featuredType, setFeaturedType] = useState<
-    (typeof PROPERTY_TYPE_ORDER)[number]
-  >(PROPERTY_TYPE_ORDER[0]!);
+  const {
+    item: featuredType,
+    auto,
+    show,
+    containerRef,
+    containerProps,
+    holdProps,
+  } = useIdleShowcase(PROPERTY_TYPE_ORDER);
 
   const featuredProperty = PROPERTY_TYPES[featuredType];
 
   return (
     <section
-      className={cn("container-page", sectionSpacing)}
+      className={cn("container-page", fullScreen, sectionSpacing)}
       aria-labelledby="categories-title"
     >
       <SplitSectionIntro
@@ -451,7 +547,11 @@ export function CategoriesSection() {
         description="From shared rooms to private homes, explore different living spaces across Pangasinan."
       />
 
-      <div className="grid min-w-0 grid-cols-1 border-y border-border lg:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)]">
+      <div
+        ref={containerRef}
+        {...containerProps}
+        className="grid min-w-0 grid-cols-1 border-y border-border lg:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)]"
+      >
         <div className="min-w-0 py-3 lg:py-6 lg:pr-10 xl:pr-14">
           <nav aria-label="Browse property types">
             <ul className="divide-y divide-border">
@@ -463,8 +563,9 @@ export function CategoriesSection() {
                   <li key={type}>
                     <Link
                       to={searchUrl({ types: [type] })}
-                      onMouseEnter={() => setFeaturedType(type)}
-                      onFocus={() => setFeaturedType(type)}
+                      {...holdProps}
+                      onMouseEnter={() => show(type)}
+                      onFocus={() => show(type)}
                       className="group flex min-w-0 items-center justify-between gap-5 py-5 sm:py-6"
                     >
                       <div className="min-w-0">
@@ -483,7 +584,7 @@ export function CategoriesSection() {
 
                       <ArrowUpRight
                         className={cn(
-                          "size-4 shrink-0 text-muted-foreground transition-[color,transform] group-hover:text-primary",
+                          "size-4 shrink-0 text-muted-foreground transition-[color,translate] group-hover:text-primary",
                           "motion-safe:group-hover:translate-x-0.5 motion-safe:group-hover:-translate-y-0.5",
                           active && "lg:text-primary",
                         )}
@@ -499,118 +600,33 @@ export function CategoriesSection() {
 
         <div className="hidden min-w-0 flex-col justify-between border-l border-border px-8 py-8 lg:flex xl:px-12 xl:py-10">
           <div className="flex flex-1 items-center justify-center pb-10">
-            <svg
-              viewBox="0 0 520 350"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-auto w-full max-w-116 text-foreground/60"
-              aria-hidden="true"
-            >
-              <g
-                stroke="currentColor"
-                strokeWidth="1.25"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                {/* Main building structure */}
-                <path d="M100 285V100H351V285" />
-                <path d="M94 100H357" />
-                <path d="M108 93H343" />
-                <path d="M108 93V100M343 93V100" />
-
-                {/* Side extension */}
-                <path d="M351 150H436V285" />
-                <path d="M345 144H442" />
-                <path d="M436 150V285" />
-
-                {/* Horizontal building divisions */}
-                <path d="M100 191H351" />
-                <path d="M100 198H351" />
-
-                {/* Architectural columns */}
-                <path d="M118 100V285" />
-                <path d="M333 100V285" />
-
-                {/* Upper windows */}
-                <rect x="144" y="121" width="59" height="52" />
-                <rect x="248" y="121" width="59" height="52" />
-
-                {/* Window frames */}
-                <path d="M173.5 121V173M144 147H203" />
-                <path d="M277.5 121V173M248 147H307" />
-
-                {/* Lower windows */}
-                <rect x="144" y="218" width="59" height="48" />
-                <path d="M173.5 218V266M144 242H203" />
-
-                {/* Main entrance */}
-                <path d="M245 285V216H307V285" />
-                <path d="M251 285V222H301V285" />
-                <path d="M285 222V285" />
-                <circle cx="293" cy="256" r="1.8" />
-
-                {/* Side extension windows */}
-                <rect x="373" y="174" width="39" height="39" />
-                <rect x="373" y="229" width="39" height="39" />
-                <path d="M392.5 174V213M373 193.5H412" />
-                <path d="M392.5 229V268M373 248.5H412" />
-
-                {/* Building base */}
-                <path d="M85 285H453" />
-                <path d="M90 291H448" />
-
-                {/* Steps */}
-                <path d="M237 285V294H316V285" />
-                <path d="M229 294V301H324V294" />
-                <path d="M219 301H334" />
-
-                {/* Roof detailing */}
-                <path d="M119 110H331" />
-                <path d="M359 160H430" />
-
-                {/* Left landscaping */}
-                <path d="M72 285V249" />
-                <path d="M72 249C51 249 47 226 61 215" />
-                <path d="M72 249C91 243 95 222 81 210" />
-                <path d="M72 231C59 222 61 208 69 204" />
-                <path d="M72 232C85 226 87 211 79 203" />
-
-                {/* Right landscaping */}
-                <path d="M463 285V253" />
-                <path d="M463 253C447 250 446 232 455 225" />
-                <path d="M463 253C480 247 484 232 473 222" />
-                <path d="M463 240C454 231 456 220 461 215" />
-
-                {/* Ground */}
-                <path d="M43 309H477" />
-                <path d="M56 315H158M372 315H464" />
-              </g>
-
-              {/* Fine architectural details */}
-              <g stroke="currentColor" strokeWidth="0.7" strokeOpacity="0.4">
-                <path d="M137 121V173M210 121V173" />
-                <path d="M241 121V173M314 121V173" />
-                <path d="M137 218V266M210 218V266" />
-                <path d="M94 88H357" />
-                <path d="M94 88V94M357 88V94" />
-                <path d="M359 139H440" />
-              </g>
-            </svg>
+            <PropertyTypeIllustration
+              type={featuredType}
+              gentle={auto}
+              className="w-full max-w-116"
+            />
           </div>
 
           <div className="border-t border-border pt-6">
             <p className="text-caption font-semibold text-muted-foreground">
               Currently exploring
             </p>
-            <h3 className="mt-1.5 type-section-title">
-              {featuredProperty.plural}
-            </h3>
-            <p className="mt-2 max-w-sm text-body text-muted-foreground">
-              {featuredProperty.description}
-            </p>
+            {/* Keyed so idle changes fade in; a hover swaps the text straight away. */}
+            <div
+              key={featuredType}
+              className={cn(auto && "animate-in fade-in duration-300")}
+            >
+              <h3 className="mt-1.5 type-section-title">
+                {featuredProperty.plural}
+              </h3>
+              <p className="mt-2 max-w-sm text-body text-muted-foreground">
+                {featuredProperty.description}
+              </p>
+            </div>
             <p className="mt-4">
               <Link
                 to={searchUrl({ types: [featuredType] })}
+                {...holdProps}
                 className={textLink}
               >
                 Explore places
@@ -647,11 +663,14 @@ const STEPS = [
 export function HowItWorksSection() {
   return (
     <section
-      className="mt-20 border-y border-border bg-pan py-14 sm:mt-24 sm:py-16 lg:mt-28 lg:py-20"
+      className={cn(
+        "mt-10 border-y border-border bg-pan py-14 sm:mt-12 sm:py-16 lg:mt-14 lg:py-20",
+        fullScreen,
+      )}
       aria-labelledby="how-title"
     >
       <div className="container-page">
-        <div className="grid grid-cols-1 items-stretch gap-8 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-10 xl:gap-14">
+        <div className="grid grid-cols-1 items-stretch gap-8 lg:min-h-section-body lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-10 xl:gap-14">
           {/* LEFT — MATCHES STEPS HEIGHT */}
           <div className="flex flex-col justify-center rounded-2xl bg-ink p-7 text-white sm:p-9 xl:p-11">
             <SectionEyebrow className="text-white/65">
@@ -669,13 +688,13 @@ export function HowItWorksSection() {
           </div>
 
           {/* RIGHT — FOUR STEPS */}
-          <ol className="min-w-0 divide-y divide-foreground/15">
+          <ol className="min-w-0 divide-y divide-foreground/15 lg:grid lg:auto-rows-fr">
             {STEPS.map((step, index) => (
               <li
                 key={step.title}
-                className="py-5 first:pt-0 last:pb-0 sm:py-6 xl:py-7"
+                className="py-5 first:pt-0 last:pb-0 sm:py-6 lg:flex lg:items-center xl:py-7"
               >
-                <div className="grid grid-cols-[2.5rem_minmax(0,1fr)] items-baseline gap-x-4 xl:grid-cols-[2.5rem_minmax(0,11rem)_minmax(0,1fr)] xl:gap-x-6">
+                <div className="grid w-full grid-cols-[2.5rem_minmax(0,1fr)] items-baseline gap-x-4 xl:grid-cols-[2.5rem_minmax(0,11rem)_minmax(0,1fr)] xl:gap-x-6">
                   <span
                     aria-hidden="true"
                     className="font-display text-metric text-primary"
@@ -716,7 +735,7 @@ const TRUST = [
 export function TrustSection() {
   return (
     <section
-      className="bg-ink py-14 text-white sm:py-16 lg:py-20"
+      className={cn("bg-ink py-14 text-white sm:py-16 lg:py-20", fullScreen)}
       aria-labelledby="trust-title"
     >
       <div className="container-page">
@@ -801,10 +820,14 @@ const LANDLORD_FEATURES = [
 export function LandlordCtaSection() {
   return (
     <section
-      className={cn("container-page pb-16 sm:pb-20", sectionSpacing)}
+      className={cn(
+        "container-page pt-20 pb-16 sm:pt-24 sm:pb-20 lg:pt-28",
+        fullScreen,
+      )}
       aria-labelledby="landlord-cta-title"
     >
-      <div className="relative isolate flex min-h-96 flex-col justify-end overflow-hidden rounded-2xl bg-ink p-6 text-white sm:p-8 lg:min-h-108 lg:p-10 xl:p-12">
+      {/* The photo takes whatever height the section has left. */}
+      <div className="relative isolate flex min-h-96 flex-1 flex-col justify-end overflow-hidden rounded-2xl bg-ink p-6 text-white sm:p-8 lg:min-h-108 lg:p-10 xl:p-12">
         <Photo
           src="/photos/exterior-01.webp"
           alt="Low-rise residential building with balconies"

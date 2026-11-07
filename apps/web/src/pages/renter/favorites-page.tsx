@@ -115,7 +115,7 @@ function FavoritesPage() {
             {/* Left: Page heading and description */}
             <div className="max-w-2xl">
               <h1 className="type-page-title text-foreground">
-                Your shortlist<span className="text-primary">.</span>
+                Shortlist<span className="text-primary">.</span>
               </h1>
 
               <p className="mt-4 max-w-lg text-body text-muted-foreground">
@@ -138,7 +138,7 @@ function FavoritesPage() {
             >
               Explore rentals
               <ArrowUpRight
-                className="size-4 transition-transform duration-200 motion-safe:group-hover:translate-x-0.5 motion-safe:group-hover:-translate-y-0.5"
+                className="size-4 transition-transform motion-safe:group-hover:translate-x-0.5 motion-safe:group-hover:-translate-y-0.5"
                 strokeWidth={1.8}
                 aria-hidden="true"
               />
@@ -221,7 +221,7 @@ function FavoritesPage() {
                         className={cn(
                           "inline-flex h-8 items-center gap-2 rounded-md px-3",
                           "text-xs font-semibold",
-                          "transition-[color,background-color,box-shadow] duration-200",
+                          "transition-[color,background-color,box-shadow]",
                           "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
                           selected
                             ? "bg-card text-foreground shadow-sm"
@@ -428,7 +428,7 @@ function FavoritesPage() {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="h-9 gap-2 rounded-full border-border px-3 text-xs font-semibold transition-colors hover:border-primary/40 hover:text-primary"
+                        className="h-9 gap-2 rounded-full border-border px-3 text-xs font-semibold hover:border-primary/40 hover:text-primary"
                       >
                         <MessageSquare
                           className="size-3.5"
@@ -453,11 +453,11 @@ function FavoritesPage() {
 
               <Link
                 to={PATHS.search}
-                className="group inline-flex items-center gap-2 text-xs font-semibold text-primary hover:underline hover:underline-offset-4"
+                className="group inline-flex items-center gap-2 text-xs font-semibold text-primary underline underline-offset-4 decoration-transparent transition-colors hover:decoration-current"
               >
                 Keep exploring
                 <ArrowUpRight
-                  className="size-4 transition-transform duration-200 motion-safe:group-hover:translate-x-0.5 motion-safe:group-hover:-translate-y-0.5"
+                  className="size-4 transition-transform motion-safe:group-hover:translate-x-0.5 motion-safe:group-hover:-translate-y-0.5"
                   aria-hidden="true"
                 />
               </Link>

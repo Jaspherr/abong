@@ -21,6 +21,7 @@ import type { Listing } from "@/types"
 import {
   amenityPreview,
   amenityShort,
+  AVAILABILITY_TONE,
   availabilitySummary,
   distanceLine,
   locationLabel,
@@ -35,21 +36,6 @@ interface ListingCardProps {
   onHover?: (id: string | null) => void
   className?: string
 }
-
-const AVAILABILITY_TONE = {
-  open: {
-    text: "text-success",
-    dot: "bg-success",
-  },
-  soon: {
-    text: "text-warning",
-    dot: "bg-warning",
-  },
-  full: {
-    text: "text-muted-foreground",
-    dot: "bg-muted-foreground",
-  },
-} as const
 
 export function ListingCard({
   listing,
@@ -81,10 +67,9 @@ export function ListingCard({
         "group relative isolate flex h-full min-w-0 flex-col",
         "overflow-hidden rounded-2xl",
         "border border-border/70 bg-card",
-        "transition-[transform,box-shadow,border-color] duration-300",
-        "motion-safe:hover:-translate-y-1",
+        "transition-[box-shadow,border-color] duration-200",
         "hover:border-primary/30",
-        "hover:shadow-[0_20px_50px_-25px_rgba(0,0,0,0.28)]",
+        "hover:shadow-raised",
         "focus-within:border-primary",
         active &&
           "border-primary ring-2 ring-primary/40 shadow-lg",
@@ -101,10 +86,7 @@ export function ListingCard({
           alt={listing.photos[0]?.alt ?? listing.name}
           priority={priority}
           className="aspect-[4/3] w-full"
-          imgClassName={cn(
-            "transition-transform duration-700 ease-out",
-            "motion-safe:group-hover:scale-[1.055]",
-          )}
+          hoverZoom
         />
 
         {/* Image gradient */}
@@ -197,7 +179,7 @@ export function ListingCard({
         {/* Property name */}
         <h3
           id={`listing-${listing.id}-title`}
-          className="line-clamp-2 font-heading text-lg font-semibold leading-snug tracking-tight text-foreground transition-colors duration-200 group-hover:text-primary sm:text-xl"
+          className="line-clamp-2 font-heading text-lg font-semibold leading-snug tracking-tight text-foreground transition-colors group-hover:text-primary sm:text-xl"
         >
           <Link
             to={PATHS.listing(listing.id)}

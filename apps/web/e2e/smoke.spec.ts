@@ -614,6 +614,160 @@ test("the sign-in and register cards are the same size", async ({ page }) => {
   expect(await cardBox("/register")).toEqual(await cardBox("/login"))
 })
 
+test("each property type on the homepage shows its own drawing", async ({ page, isMobile }) => {
+  test.skip(isMobile, "The drawing panel only shows from the lg breakpoint.")
+  await page.goto("/")
+  const nav = page.getByRole("navigation", { name: "Browse property types" })
+  const drawing = (type: string) => page.locator(`[data-property-illustration="${type}"]`)
+
+  await expect(drawing("boarding-house")).toHaveCSS("opacity", "1")
+  await expect(drawing("house")).toHaveCSS("opacity", "0")
+
+  await nav.getByRole("link", { name: /^Houses/ }).hover()
+  await expect(drawing("house")).toHaveCSS("opacity", "1")
+  await expect(drawing("boarding-house")).toHaveCSS("opacity", "0")
+
+  // Keyboard users get the same preview.
+  await nav.getByRole("link", { name: /^Bedspaces/ }).focus()
+  await expect(drawing("bedspace")).toHaveCSS("opacity", "1")
+  await expect(drawing("house")).toHaveCSS("opacity", "0")
+})
+
+test("hovering a listing card doesn't move it, and only the photo zooms", async ({ page, isMobile }) => {
+  test.skip(isMobile, "Hover doesn't apply on touch screens.")
+  await page.goto("/search")
+  const card = page.locator("article").first()
+  const photo = card.locator("img").first()
+  await expect(photo).toBeVisible()
+  await card.scrollIntoViewIfNeeded()
+  const before = await card.boundingBox()
+
+  // Moving the mouse directly, because hover() can scroll the page first.
+  await page.mouse.move(before!.x + before!.width / 2, before!.y + before!.height / 2)
+  await expect(photo).toHaveCSS("scale", "1.03")
+  expect(await card.boundingBox()).toEqual(before)
+  // Tailwind's scale-* sets the scale property, so a list naming only transform would snap.
+  await expect(photo).toHaveCSS("transition-property", /scale/)
+})
+
+test("hovering a listing card doesn't zoom the photo when reduced motion is on", async ({ page, isMobile }) => {
+  test.skip(isMobile, "Hover doesn't apply on touch screens.")
+  await page.emulateMedia({ reducedMotion: "reduce" })
+  await page.goto("/search")
+  const card = page.locator("article").first()
+  await expect(card.locator("img").first()).toBeVisible()
+  await card.hover()
+  await page.waitForTimeout(100)
+  await expect(card.locator("img").first()).toHaveCSS("scale", "none")
+})
+
+test.describe("property type drawings while idle", () => {
+  const shownDrawing = (page: Page) => page.locator('[data-property-illustration][data-active="true"]').getAttribute("data-property-illustration")
+
+  const openSection = async (page: Page) => {
+    await page.clock.install()
+    await page.goto("/")
+    await page.getByRole("heading", { name: "Find the space that fits you." }).scrollIntoViewIfNeeded()
+    await page.mouse.move(0, 0)
+    // The on-screen check runs on real time, not the fake clock, so give it a moment.
+    await page.waitForTimeout(300)
+  }
+
+  test.beforeEach(({ isMobile }) => {
+    test.skip(isMobile, "The drawing panel only shows from the lg breakpoint.")
+  })
+
+  test("cycles through every type in random order without repeating one", async ({ page }) => {
+    await openSection(page)
+    const seen = [await shownDrawing(page)]
+    for (let tick = 0; tick < 16; tick++) {
+      await page.clock.runFor(4600)
+      await expect.poll(() => shownDrawing(page)).not.toBe(seen.at(-1))
+      seen.push(await shownDrawing(page))
+    }
+    expect(new Set(seen).size).toBe(8)
+  })
+
+  test("a hover holds its drawing, then the cycle resumes after a short delay", async ({ page }) => {
+    await openSection(page)
+    const row = page.getByRole("navigation", { name: "Browse property types" }).getByRole("link", { name: /^Houses/ })
+
+    await row.hover()
+    await expect.poll(() => shownDrawing(page)).toBe("house")
+    await page.clock.runFor(20_000)
+    expect(await shownDrawing(page)).toBe("house")
+
+    await page.mouse.move(0, 0)
+    await page.clock.runFor(1000)
+    expect(await shownDrawing(page)).toBe("house")
+    await page.clock.runFor(1500)
+    await expect.poll(() => shownDrawing(page)).not.toBe("house")
+  })
+
+  test("keyboard focus holds its drawing for as long as it stays in the section", async ({ page }) => {
+    await openSection(page)
+    await page.getByRole("navigation", { name: "Browse property types" }).getByRole("link", { name: /^Rooms/ }).focus()
+    await expect.poll(() => shownDrawing(page)).toBe("room")
+    await page.clock.runFor(20_000)
+    expect(await shownDrawing(page)).toBe("room")
+  })
+
+  test("uses the latest on-screen update when several arrive together", async ({ page }) => {
+    // Browsers can batch these during a busy load, as they do when refreshing part way down the page.
+    await page.addInitScript(`
+      window.IntersectionObserver = class {
+        constructor(callback) { this.callback = callback }
+        observe() {
+          setTimeout(() => this.callback([{ isIntersecting: false }, { isIntersecting: true }], this), 0)
+        }
+        unobserve() {}
+        disconnect() {}
+        takeRecords() { return [] }
+      }
+    `)
+    await openSection(page)
+    await page.clock.runFor(100)
+    const first = await shownDrawing(page)
+    await page.clock.runFor(4600)
+    await expect.poll(() => shownDrawing(page)).not.toBe(first)
+  })
+
+  test("a mouse resting on the drawing doesn't stop the cycle", async ({ page }) => {
+    await openSection(page)
+    const box = await page.locator('[data-property-illustration][data-active="true"]').boundingBox()
+    await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2)
+    const first = await shownDrawing(page)
+    await page.clock.runFor(4600)
+    await expect.poll(() => shownDrawing(page)).not.toBe(first)
+  })
+
+  test("hovering the explore link keeps its destination", async ({ page }) => {
+    await openSection(page)
+    const link = page.getByRole("link", { name: "Explore places" })
+    await link.hover()
+    const destination = await link.getAttribute("href")
+    await page.clock.runFor(20_000)
+    expect(await link.getAttribute("href")).toBe(destination)
+  })
+
+  test("stays still when reduced motion is on", async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: "reduce" })
+    await openSection(page)
+    const first = await shownDrawing(page)
+    await page.clock.runFor(30_000)
+    expect(await shownDrawing(page)).toBe(first)
+  })
+
+  test("doesn't run while scrolled out of view", async ({ page }) => {
+    await page.clock.install()
+    await page.goto("/")
+    await page.mouse.move(0, 0)
+    await page.locator('[data-property-illustration][data-active="true"]').waitFor({ state: "attached" })
+    await page.clock.runFor(30_000)
+    expect(await shownDrawing(page)).toBe("boarding-house")
+  })
+})
+
 test("a new landlord can register, with focus sent to the first problem", async ({ page }) => {
   await page.goto("/register")
   await expect(page.getByRole("main")).toHaveCount(1)

@@ -144,7 +144,7 @@ function VerificationsPage() {
                             onClick={() => setReview(item.id)}
                             aria-pressed={selected}
                             className={cn(
-                              "group relative flex w-full min-w-0 items-center gap-3 border-l-2 px-3 py-4 text-left transition-colors duration-150 focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring motion-reduce:transition-none sm:gap-4 sm:px-4",
+                              "group relative flex w-full min-w-0 items-center gap-3 border-l-2 px-3 py-4 text-left transition-colors focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring motion-reduce:transition-none sm:gap-4 sm:px-4",
                               selected
                                 ? "border-l-primary bg-primary/[0.045]"
                                 : "border-l-transparent hover:bg-muted/40",
@@ -172,10 +172,10 @@ function VerificationsPage() {
 
                             <ChevronRight
                               className={cn(
-                                "size-4 shrink-0 transition-all duration-150 motion-reduce:transition-none",
+                                "size-4 shrink-0 transition-[color,translate]",
                                 selected
                                   ? "translate-x-0.5 text-primary"
-                                  : "text-muted-foreground/50 group-hover:translate-x-0.5 group-hover:text-foreground",
+                                  : "text-muted-foreground/50 motion-safe:group-hover:translate-x-0.5 group-hover:text-foreground",
                               )}
                               aria-hidden="true"
                             />

@@ -9,10 +9,12 @@ interface PhotoProps extends Omit<ImgHTMLAttributes<HTMLImageElement>, "src" | "
   priority?: boolean
   className?: string
   imgClassName?: string
+  /** Slow, slight zoom while the nearest `group` is hovered. */
+  hoverZoom?: boolean
 }
 
 /** Image with a calm placeholder while loading and a fallback when the file is missing. */
-export function Photo({ src, alt, priority, className, imgClassName, ...rest }: PhotoProps) {
+export function Photo({ src, alt, priority, className, imgClassName, hoverZoom, ...rest }: PhotoProps) {
   const [state, setState] = useState<"loading" | "loaded" | "error">(src ? "loading" : "error")
   const [shownSrc, setShownSrc] = useState(src)
   // Reused instances (e.g. the map preview card) must not keep the previous image's state.
@@ -33,8 +35,9 @@ export function Photo({ src, alt, priority, className, imgClassName, ...rest }: 
           onLoad={() => setState("loaded")}
           onError={() => setState("error")}
           className={cn(
-            "size-full object-cover transition-opacity duration-300",
+            "size-full object-cover transition-[opacity,scale,filter] duration-400",
             state === "loaded" ? "opacity-100" : "opacity-0",
+            hoverZoom && "motion-safe:group-hover:scale-[1.03]",
             imgClassName,
           )}
           {...rest}

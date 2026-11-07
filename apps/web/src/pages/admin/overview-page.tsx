@@ -67,10 +67,10 @@ function Queue({ title, hint, to, count, items, loading, error }: QueueProps) {
         <Link
           to={to}
           aria-label={`View all ${title.toLowerCase()}`}
-          className="group inline-flex shrink-0 items-center gap-1.5 rounded-sm py-1 text-xs font-medium text-foreground transition-colors duration-150 hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring motion-reduce:transition-none"
+          className="group inline-flex shrink-0 items-center gap-1.5 rounded-sm py-1 text-xs font-medium text-foreground transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring motion-reduce:transition-none"
         >
           View all
-          <ArrowUpRight className="size-3.5 transition-transform duration-150 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 motion-reduce:transform-none" aria-hidden="true" />
+          <ArrowUpRight className="size-3.5 transition-transform motion-safe:group-hover:translate-x-0.5 motion-safe:group-hover:-translate-y-0.5" aria-hidden="true" />
         </Link>
       </div>
 
@@ -94,7 +94,7 @@ function Queue({ title, hint, to, count, items, loading, error }: QueueProps) {
             <li key={item.id}>
               <Link
                 to={item.to}
-                className="group flex min-w-0 items-center gap-3 rounded-sm px-2 py-3 transition-colors duration-150 hover:bg-muted/40 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring motion-reduce:transition-none sm:gap-4"
+                className="group flex min-w-0 items-center gap-3 rounded-sm px-2 py-3 transition-colors hover:bg-muted/40 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring motion-reduce:transition-none sm:gap-4"
               >
                 <span className="shrink-0">{item.lead}</span>
                 <span className="min-w-0 flex-1">
@@ -104,7 +104,7 @@ function Queue({ title, hint, to, count, items, loading, error }: QueueProps) {
                   <span className="mt-1 block truncate text-xs leading-snug text-muted-foreground">{item.detail}</span>
                 </span>
                 <span className="hidden shrink-0 sm:block">{item.badge}</span>
-                <ChevronRight className="size-4 shrink-0 text-muted-foreground/60 transition-transform duration-150 group-hover:translate-x-0.5 group-hover:text-foreground motion-reduce:transform-none" aria-hidden="true" />
+                <ChevronRight className="size-4 shrink-0 text-muted-foreground/60 transition-[color,translate] motion-safe:group-hover:translate-x-0.5 group-hover:text-foreground" aria-hidden="true" />
               </Link>
             </li>
           ))}
@@ -244,7 +244,7 @@ function AdminOverviewPage() {
                       <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">{activity.detail}</span>
                       <span className="mt-1.5 block text-caption tabular-nums text-muted-foreground">{formatRelative(activity.at)}</span>
                     </span>
-                    {activity.href && <ChevronRight className="mt-0.5 size-4 shrink-0 text-muted-foreground/60 transition-transform group-hover:translate-x-0.5 motion-reduce:transform-none" aria-hidden="true" />}
+                    {activity.href && <ChevronRight className="mt-0.5 size-4 shrink-0 text-muted-foreground/60 transition-transform motion-safe:group-hover:translate-x-0.5" aria-hidden="true" />}
                   </>
                 )
                 return (
@@ -252,7 +252,7 @@ function AdminOverviewPage() {
                     {activity.href ? (
                       <Link
                         to={activity.href}
-                        className="group flex gap-3 rounded-sm px-1 py-3.5 transition-colors duration-150 hover:bg-muted/40 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring motion-reduce:transition-none"
+                        className="group flex gap-3 rounded-sm px-1 py-3.5 transition-colors hover:bg-muted/40 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring motion-reduce:transition-none"
                       >
                         {contents}
                       </Link>
@@ -281,7 +281,7 @@ function AdminOverviewPage() {
             className="group mb-6 inline-flex items-center gap-1.5 rounded-sm text-xs font-semibold text-foreground transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring motion-reduce:transition-none"
           >
             Explore analytics
-            <ArrowUpRight className="size-4 transition-transform duration-150 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 motion-reduce:transform-none" aria-hidden="true" />
+            <ArrowUpRight className="size-4 transition-transform motion-safe:group-hover:translate-x-0.5 motion-safe:group-hover:-translate-y-0.5" aria-hidden="true" />
           </Link>
         </div>
         {isPending ? (

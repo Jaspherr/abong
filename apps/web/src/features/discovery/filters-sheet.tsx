@@ -54,7 +54,7 @@ export function FiltersSheet({
       <DialogTrigger asChild>
         <Button
           variant="outline"
-          className="relative shrink-0 gap-2 rounded-lg border-border/80 px-4 font-medium shadow-none transition-colors hover:bg-muted/60"
+          className="relative shrink-0 gap-2 rounded-lg border-border/80 px-4 font-medium shadow-none hover:bg-muted/60"
         >
           <SlidersHorizontal className="size-4" aria-hidden="true" />
           Filters

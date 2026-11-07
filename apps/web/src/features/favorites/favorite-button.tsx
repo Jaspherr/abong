@@ -27,7 +27,7 @@ export function FavoriteButton({
         toggle.mutate({ listingId, name })
       }}
       className={cn(
-        "group/fav inline-flex items-center justify-center gap-2 transition-[transform,background-color] duration-200 ease-soft active:scale-90",
+        "group/fav inline-flex items-center justify-center gap-2 transition-[scale,background-color,border-color] motion-safe:active:scale-95",
         variant === "overlay"
           ? "size-9 rounded-full bg-card/95 pointer-coarse:size-10 text-ink shadow-[0_1px_2px_rgb(23_25_28/0.18)] hover:bg-card"
           : "h-10 rounded-lg border border-ink/20 bg-card px-3.5 text-sm font-semibold hover:border-ink/35",
@@ -39,7 +39,7 @@ export function FavoriteButton({
         key={saved ? "saved" : "unsaved"}
         aria-hidden="true"
         className={cn(
-          "size-4.5 transition-colors duration-150",
+          "size-4.5 transition-colors",
           saved ? "animate-save fill-primary stroke-primary" : "group-hover/fav:stroke-primary",
         )}
       />

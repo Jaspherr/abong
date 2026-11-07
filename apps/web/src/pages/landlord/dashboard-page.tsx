@@ -30,7 +30,7 @@ function Fact({ to, value, label, detail, emphasis }: { to: string; value: numbe
     <Link to={to} className="group block min-w-0 rounded-lg px-1 py-1 outline-none focus-visible:ring-2 focus-visible:ring-ring">
       <span className="flex items-baseline gap-2">
         <span className={cn("font-display text-price tabular", emphasis && "text-primary")}>{value}</span>
-        <span className="truncate text-sm font-medium underline-offset-4 group-hover:underline">{label}</span>
+        <span className="truncate text-sm font-medium underline-offset-4 underline decoration-transparent transition-colors group-hover:decoration-current">{label}</span>
       </span>
       <span className="block text-meta text-muted-foreground">{detail}</span>
     </Link>

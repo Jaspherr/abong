@@ -49,6 +49,7 @@ Status meaning is fixed app-wide through `constants/status.ts` → `Tone` → `S
 - Two shadows only: `shadow-card` (resting surfaces) and `shadow-raised` (hover, floating panels, the search form).
 - Controls are 40px tall (`h-10`) for comfortable touch; large CTAs are 48px.
 - Page container: `container-page` (max 84rem, 16/24/32px gutters).
+- Homepage sections: `min-h-section` fills the screen below the header, capped at 64rem so large monitors don't get empty space. It's a minimum, so longer sections keep growing. Short sections give the extra height to their content (`min-h-section-body`, or a photo with `flex-1`) rather than to blank space.
 
 ## Components
 
@@ -61,7 +62,7 @@ shadcn/ui primitives in `components/ui` are kept close to upstream but resized a
 
 ## Motion
 
-One entrance per page (`animate-rise`, 520ms, soft ease-out). Everything else responds to input: card photo zoom on hover, the favourite heart, sheet and dialog transitions, map marker emphasis. `prefers-reduced-motion` disables animation globally.
+One entrance per page (`animate-rise`, 320ms, soft ease-out). Everything else responds to input, and hover stays quiet: colours fade in 150ms on one shared curve (`--default-transition-*` in `index.css`), cards change border and shadow without moving, card photos zoom to 1.03 over 400ms (`<Photo hoverZoom />`), arrows nudge 2px, and buttons press to 0.98. Movement is gated with `motion-safe:`, and `prefers-reduced-motion` also shortens every transition and animation globally.
 
 ## Copy
 

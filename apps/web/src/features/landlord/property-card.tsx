@@ -31,7 +31,7 @@ export function PropertyCard({ property: p }: { property: ManagedProperty }) {
   return (
     <article className="group relative flex h-full min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-card transition-[box-shadow,border-color] duration-200 focus-within:border-primary hover:border-primary/30 hover:shadow-raised">
       <div className="relative overflow-hidden bg-muted">
-        <Photo src={p.photos[0]?.src} alt="" className="aspect-[16/10] w-full" imgClassName="transition-transform duration-500 ease-out motion-safe:group-hover:scale-[1.03]" />
+        <Photo src={p.photos[0]?.src} alt="" className="aspect-[16/10] w-full" hoverZoom />
         <div className="pointer-events-none absolute top-3 left-3 flex flex-wrap items-center gap-1.5 pr-12">
           <MetaBadge meta={LISTING_STATUS[p.status]} />
           {p.isVerified && <StatusBadge tone="brand">Verified</StatusBadge>}

@@ -259,7 +259,7 @@ function ThreadList({
                 setSearch("")
                 setUnreadOnly(false)
               }}
-              className="mt-5 text-xs font-semibold text-primary hover:underline"
+              className="mt-5 text-xs font-semibold text-primary underline underline-offset-4 decoration-transparent transition-colors hover:decoration-current"
             >
               Show all conversations
             </button>
@@ -280,7 +280,7 @@ function ThreadList({
                     className={cn(
                       "group relative flex w-full min-w-0 gap-3",
                       "border-l-[3px] px-4 py-4 text-left",
-                      "transition-colors duration-150",
+                      "transition-colors",
                       "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
                       selected
                         ? "border-primary bg-primary/[0.055]"
@@ -909,8 +909,6 @@ function Conversation({
               aria-label="Send message"
               className={cn(
                 "size-11 shrink-0 rounded-xl",
-                "transition-[opacity,transform] duration-200",
-                "enabled:active:scale-95",
               )}
             >
               {send.isPending ? (

@@ -130,7 +130,7 @@ function AdminProfilePage() {
             <Button
               variant="outline"
               asChild
-              className="gap-2 rounded-md transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none lg:hidden"
+              className="gap-2 rounded-md focus-visible:ring-2 focus-visible:ring-ring lg:hidden"
             >
               <Link to="/">
                 <ArrowUpRight className="size-4" aria-hidden="true" />

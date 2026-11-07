@@ -64,7 +64,7 @@ export function CompareTable({ listings }: { listings: Listing[] }) {
               <th key={l.id} scope="col" className="min-w-44 p-4 align-top font-normal">
                 <Link to={PATHS.listing(l.id)} className="group block space-y-2">
                   <Photo src={l.photos[0]?.src} alt="" className="aspect-[3/2] rounded-lg" />
-                  <span className="line-clamp-2 font-semibold group-hover:underline">{l.name}</span>
+                  <span className="line-clamp-2 font-semibold underline underline-offset-4 decoration-transparent transition-colors group-hover:decoration-current">{l.name}</span>
                 </Link>
               </th>
             ))}

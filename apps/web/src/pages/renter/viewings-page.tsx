@@ -125,7 +125,7 @@ function RenterViewingsPage() {
           {/* Title */}
           <div className="max-w-2xl">
             <h1 className="type-page-title text-foreground">
-              Your viewings<span className="text-primary">.</span>
+              Viewings<span className="text-primary">.</span>
             </h1>
 
             <p className="mt-3 max-w-lg text-body text-muted-foreground">
@@ -143,7 +143,7 @@ function RenterViewingsPage() {
             Your saved places
 
             <ArrowRight
-              className="size-4 transition-transform duration-200 motion-safe:group-hover:translate-x-1"
+              className="size-4 transition-transform motion-safe:group-hover:translate-x-0.5"
               strokeWidth={1.8}
               aria-hidden="true"
             />

@@ -107,7 +107,7 @@ export function ListingGallery({ photos, title }: { photos: ListingPhoto[]; titl
             )}
             aria-label={`Open photo ${i + 1}: ${photo.alt}`}
           >
-            <Photo src={photo.src} alt={photo.alt} priority={i === 0} className="size-full" imgClassName="transition-[transform,filter] duration-500 ease-soft group-hover:scale-[1.02] group-hover:brightness-95" />
+            <Photo src={photo.src} alt={photo.alt} priority={i === 0} className="size-full" hoverZoom imgClassName="group-hover:brightness-95" />
           </button>
         ))}
         <Button variant="outline" size="sm" onClick={() => openAt(0)} className="absolute right-4 bottom-4 border-transparent bg-card shadow-raised">

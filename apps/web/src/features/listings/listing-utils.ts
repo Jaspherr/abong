@@ -48,6 +48,12 @@ export function availabilitySummary(listing: Listing): { text: string; tone: "op
   return { text: "Fully occupied", tone: "full" }
 }
 
+export const AVAILABILITY_TONE = {
+  open: { text: "text-success", dot: "bg-success" },
+  soon: { text: "text-warning", dot: "bg-warning" },
+  full: { text: "text-muted-foreground", dot: "bg-muted-foreground" },
+} as const
+
 export function distanceLine(listing: Listing) {
   const anchor = listing.anchorDistance
   if (anchor && anchor.distanceKm < 8) {
@@ -96,4 +102,11 @@ const STUDENT_TYPES = new Set<Listing["type"]>(["boarding-house", "bedspace", "d
 
 export function studentTypesFirst<T extends Pick<Listing, "type">>(listings: readonly T[]): T[] {
   return [...listings].sort((a, b) => Number(STUDENT_TYPES.has(b.type)) - Number(STUDENT_TYPES.has(a.type)))
+}
+
+/** Splits featured places for the home page, so the hero and the section below it never repeat a listing. */
+export function splitFeaturedListings(listings: readonly Listing[]) {
+  const sorted = studentTypesFirst(listings)
+  const hero = sorted.filter((listing) => listing.photos.length > 0).slice(0, 2)
+  return { hero, rest: sorted.filter((listing) => !hero.includes(listing)) }
 }

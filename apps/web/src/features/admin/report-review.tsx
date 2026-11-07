@@ -65,7 +65,7 @@ export function ReportReview({ report, onClosed }: { report: ReportWithContext; 
           <dd>{report.landlordName}</dd>
           <dt>Listing</dt>
           <dd>
-            <Link to={`${PATHS.admin.listings}?review=${report.listingId}`} className="font-medium text-primary underline-offset-4 hover:underline">
+            <Link to={`${PATHS.admin.listings}?review=${report.listingId}`} className="font-medium text-primary underline-offset-4 underline decoration-transparent transition-colors hover:decoration-current">
               Open in moderation
             </Link>
           </dd>

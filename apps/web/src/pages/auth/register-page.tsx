@@ -205,7 +205,7 @@ function RegisterPage() {
               <label
                 key={option.value}
                 className={cn(
-                  "group relative flex min-w-0 cursor-pointer items-center gap-3 rounded-xl border-2 p-2.5 pr-8 transition-colors duration-200 focus-within:ring-2 focus-within:ring-ring/40",
+                  "group relative flex min-w-0 cursor-pointer items-center gap-3 rounded-xl border-2 p-2.5 pr-8 transition-colors focus-within:ring-2 focus-within:ring-ring/40",
                   selected
                     ? "border-primary bg-primary/5"
                     : "border-border bg-card hover:border-primary/40 hover:bg-muted/40",
@@ -448,7 +448,7 @@ function RegisterPage() {
         Already have an account?{" "}
         <Link
           to={`${PATHS.login}${next ? `?next=${encodeURIComponent(next)}` : ""}`}
-          className="font-semibold text-primary underline-offset-4 transition-colors hover:underline focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          className="font-semibold text-primary underline-offset-4 transition-colors underline decoration-transparent hover:decoration-current focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
         >
           Sign in
         </Link>

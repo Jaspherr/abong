@@ -16,7 +16,7 @@ import {
 } from "@/features/discovery/home-sections"
 import {
   priceUnitLong,
-  studentTypesFirst,
+  splitFeaturedListings,
   typeLabel,
 } from "@/features/listings/listing-utils"
 import {
@@ -58,9 +58,8 @@ function HeroListing({
       className={cn(
         "group relative isolate block min-w-0 overflow-hidden",
         "rounded-2xl bg-muted",
-        "outline-none transition-[transform,box-shadow] duration-500",
-        "motion-safe:hover:-translate-y-1",
-        "hover:shadow-2xl",
+        "outline-none transition-shadow duration-200",
+        "hover:shadow-raised",
         "focus-visible:ring-4 focus-visible:ring-primary/40",
         className,
       )}
@@ -71,11 +70,7 @@ function HeroListing({
         alt={photo?.alt ?? listing.name}
         priority={priority}
         className="absolute inset-0 h-full w-full"
-        imgClassName={cn(
-          "h-full w-full",
-          "transition-transform duration-700 ease-out",
-          "motion-safe:group-hover:scale-[1.055]",
-        )}
+        hoverZoom
       />
 
       {/* Contrast overlay */}
@@ -91,9 +86,9 @@ function HeroListing({
           Featured place
         </span>
 
-        <div className="flex size-10 items-center justify-center rounded-full border border-white/30 bg-white/15 text-white backdrop-blur-md transition-colors duration-300 group-hover:bg-white group-hover:text-neutral-950">
+        <div className="flex size-10 items-center justify-center rounded-full border border-white/30 bg-white/15 text-white backdrop-blur-md transition-colors group-hover:bg-white group-hover:text-neutral-950">
           <ArrowUpRight
-            className="size-5 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+            className="size-5 transition-transform motion-safe:group-hover:translate-x-0.5 motion-safe:group-hover:-translate-y-0.5"
             aria-hidden="true"
           />
         </div>
@@ -259,14 +254,14 @@ function HeroGallery({ first, second }: HeroGalleryProps) {
 function Hero() {
   const { data: featured = [] } = useFeaturedListings()
 
-  const [first, second] = studentTypesFirst(
-    featured.filter((listing) => listing.photos.length > 0),
-  )
+  const {
+    hero: [first, second],
+  } = splitFeaturedListings(featured)
 
   return (
     <section
       aria-labelledby="hero-title"
-      className="relative isolate bg-background"
+      className="relative isolate flex min-h-section flex-col justify-center bg-background"
     >
       {/* Background atmosphere */}
       <div

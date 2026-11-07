@@ -189,7 +189,7 @@ function RenterProfilePage() {
         <div className="max-w-xl">
 
           <h1 className="type-page-title text-foreground">
-            Your profile
+            Profile<span className="text-primary">.</span>
           </h1>
 
           <p className="mt-3 text-body text-muted-foreground">

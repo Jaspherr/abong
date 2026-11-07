@@ -81,7 +81,7 @@ function AccountActions({ user, busy, onCopyEmail, onSuspend, onReactivate }: Ac
           type="button"
           variant="ghost"
           size="icon"
-          className="size-9 shrink-0 rounded-md text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none"
+          className="size-9 shrink-0 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
           aria-label={`Actions for ${user.name}`}
           disabled={busy}
         >
@@ -264,7 +264,7 @@ function UsersPage() {
             </div>
           ) : (
             <>
-              <div className={`transition-opacity duration-150 motion-reduce:transition-none ${isFetching ? "opacity-60" : "opacity-100"}`}>
+              <div className={`transition-opacity duration-150 ${isFetching ? "opacity-60" : "opacity-100"}`}>
                 {/* Mobile: retain role, status, dates and verification without a cramped table. */}
                 <ul aria-label="Users" className="divide-y divide-border/75 border-b border-border/80 md:hidden">
                   {data.rows.map((user) => (
@@ -317,7 +317,7 @@ function UsersPage() {
                       {data.rows.map((user) => (
                         <TableRow
                           key={user.id}
-                          className="border-border/70 transition-colors duration-150 hover:bg-muted/35 motion-reduce:transition-none"
+                          className="border-border/70 transition-colors hover:bg-muted/35"
                         >
                           <TableCell className="max-w-0 min-w-52 py-4 pl-3 whitespace-normal sm:pl-4">
                             <div className="flex min-w-0 items-center gap-3">
