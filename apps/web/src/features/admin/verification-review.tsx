@@ -6,14 +6,28 @@ import { MetaBadge } from "@/components/common/status-badge"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { VERIFICATION_STATUS, VERIFICATION_TYPES } from "@/constants/status"
+import { DECISION_NOTE_MIN, VERIFICATION_STATUS, VERIFICATION_TYPES } from "@/constants/status"
 import { formatDate } from "@/lib/format"
 import { verificationService, type VerificationQueueItem } from "@/services"
+import { decisionError } from "./decision-error"
+import { DecisionHistory } from "./decision-history"
 import { DecisionBar, FactList } from "./review-split"
 
 type Decision = "verified" | "needs-update" | "rejected"
 
-export function VerificationReview({ item, onDecided }: { item: VerificationQueueItem; onDecided: () => void }) {
+/**
+ * `earlier` holds the landlord's other submissions of the same check, so a resubmission
+ * can be judged against what was asked for last time.
+ */
+export function VerificationReview({
+  item,
+  earlier,
+  onDecided,
+}: {
+  item: VerificationQueueItem
+  earlier: VerificationQueueItem[]
+  onDecided: () => void
+}) {
   const client = useQueryClient()
   const [note, setNote] = useState("")
   const [noteError, setNoteError] = useState(false)
@@ -29,10 +43,10 @@ export function VerificationReview({ item, onDecided }: { item: VerificationQueu
       setNote("")
       onDecided()
     },
-    onError: () => toast.error("That didn't save. Try again."),
+    onError: (error) => toast.error(decisionError(error)),
   })
   const decide = (d: Decision) => {
-    if (d !== "verified" && note.trim().length < 10) return setNoteError(true)
+    if (d !== "verified" && note.trim().length < DECISION_NOTE_MIN) return setNoteError(true)
     review.mutate(d)
   }
 
@@ -98,6 +112,25 @@ export function VerificationReview({ item, onDecided }: { item: VerificationQueu
         </section>
 
         {item.reviewerNote && <p className="rounded-lg bg-info-soft p-3 text-sm text-info">Previous note: {item.reviewerNote}</p>}
+
+        {earlier.length > 0 && (
+          <section className="space-y-3 border-t border-border pt-5">
+            <h3 className="font-sans text-sm font-semibold">Earlier submissions of this check</h3>
+            <ul className="space-y-3">
+              {earlier.map((previous) => (
+                <li key={previous.id} className="text-sm">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <MetaBadge meta={VERIFICATION_STATUS[previous.status]} />
+                    <span className="text-meta text-muted-foreground">Submitted {formatDate(previous.submittedAt)}</span>
+                  </div>
+                  {previous.reviewerNote && <p className="mt-1 text-muted-foreground">{previous.reviewerNote}</p>}
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        <DecisionHistory targetIds={[item.id]} />
       </div>
 
       {item.status === "pending" && (
@@ -119,7 +152,7 @@ export function VerificationReview({ item, onDecided }: { item: VerificationQueu
             />
             {noteError && (
               <p id="verify-note-error" className="text-meta text-destructive">
-                Explain what's wrong so the landlord can fix it.
+                Explain what's wrong in at least 10 characters, so the landlord can fix it.
               </p>
             )}
           </div>

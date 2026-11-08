@@ -1,11 +1,10 @@
 import { useQuery } from "@tanstack/react-query"
-import { ArrowUpRight, CheckCheck, ChevronRight, TrendingDown, TrendingUp } from "lucide-react"
+import { ArrowUpRight, CheckCheck, ChevronRight } from "lucide-react"
 import type { ReactNode } from "react"
 import { Link } from "react-router"
 import { Photo } from "@/components/common/photo"
 import { MetaBadge } from "@/components/common/status-badge"
 import { UserAvatar } from "@/components/common/user-avatar"
-import { Sparkline } from "@/components/charts/trend-chart"
 import { ErrorState } from "@/components/feedback/states"
 import { Skeleton } from "@/components/ui/skeleton"
 import { PATHS } from "@/constants/app"
@@ -13,7 +12,7 @@ import { LISTING_STATUS, REPORT_REASONS, REPORT_STATUS, VERIFICATION_STATUS, VER
 import { isOpenReport } from "@/features/admin/report-status"
 import { AdminPageHeader, HeaderMetric } from "@/features/admin/admin-page-header"
 import { useDocumentTitle } from "@/hooks/use-document-title"
-import { formatNumber, formatRelative, formatSignedPercent, pluralize } from "@/lib/format"
+import { formatNumber, formatRelative, pluralize } from "@/lib/format"
 import { qk } from "@/lib/query"
 import { cn } from "@/lib/utils"
 import { adminService, verificationService } from "@/services"
@@ -27,6 +26,7 @@ const ACTIVITY_DOT: Record<ActivityKind, string> = {
   "report-filed": "bg-destructive",
   inquiry: "bg-chart-1",
   viewing: "bg-chart-1",
+  "listing-moderated": "bg-muted-foreground",
 }
 
 const PREVIEW = 3
@@ -286,30 +286,19 @@ function AdminOverviewPage() {
         </div>
         {isPending ? (
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="Loading platform metrics">
-            {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-36 w-full rounded-md" />)}
+            {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-28 w-full rounded-md" />)}
           </div>
         ) : data && data.metrics.length > 0 ? (
           <ul className="grid grid-cols-1 border-y border-border/80 sm:grid-cols-2 xl:grid-cols-4">
-            {data.metrics.map((metric) => {
-              const up = metric.delta >= 0
-              const Trend = up ? TrendingUp : TrendingDown
-              return (
-                <li key={metric.id} className="min-w-0 border-b border-border/70 px-1 py-5 last:border-b-0 sm:px-5 sm:odd:border-r xl:border-b-0 xl:border-r xl:first:pl-0 xl:last:border-r-0 xl:last:pr-0">
-                  <p className="truncate text-xs font-medium text-muted-foreground">{metric.label}</p>
-                  <div className="mt-2 flex items-end justify-between gap-3">
-                    <span className="min-w-0 font-display text-metric text-foreground">
-                      {formatNumber(metric.value)}
-                    </span>
-                    <Sparkline values={metric.series} className="w-20 shrink-0 sm:w-24" label={`${metric.label}, last 12 weeks`} />
-                  </div>
-                  <div className={cn("mt-4 inline-flex items-center gap-1.5 text-xs font-medium tabular-nums", up ? "text-success" : "text-destructive")}>
-                    <Trend className="size-3.5" aria-hidden="true" />
-                    {formatSignedPercent(metric.delta)}
-                    <span className="font-normal text-muted-foreground">in 30 days</span>
-                  </div>
-                </li>
-              )
-            })}
+            {data.metrics.map((metric) => (
+              <li key={metric.id} className="min-w-0 border-b border-border/70 px-1 py-5 last:border-b-0 sm:px-5 sm:odd:border-r xl:border-b-0 xl:border-r xl:first:pl-0 xl:last:border-r-0 xl:last:pr-0">
+                <p className="truncate text-xs font-medium text-muted-foreground">{metric.label}</p>
+                <p className="mt-2 font-display text-metric text-foreground">{formatNumber(metric.value)}</p>
+                <p className="mt-3 text-xs text-muted-foreground">
+                  <span className="font-medium tabular-nums text-foreground">{formatNumber(metric.recent)}</span> new in the last 30 days
+                </p>
+              </li>
+            ))}
           </ul>
         ) : (
           <p className="border-t border-border/70 py-4 text-sm text-muted-foreground">No platform metrics available.</p>

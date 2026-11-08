@@ -3,27 +3,17 @@ import { DEMO_ACCOUNTS } from "@/data/users"
 import type { RenterProfile, Session, User, UserRole } from "@/types"
 import { db, nextId } from "./mock/db"
 import { ServiceError, respond } from "./mock/latency"
+import { rememberSession as remember, sessionUserId } from "./mock/session"
 
 /**
  * Mock authentication. There are no passwords: any password signs in a known
  * demo email. The real implementation will exchange credentials for a token.
  */
-const SESSION_KEY = "abong:session"
-
 function buildSession(user: User): Session {
   return {
     user,
     renterProfile: db.renterProfiles.find((p) => p.userId === user.id),
     landlordProfile: db.landlordProfiles.find((p) => p.userId === user.id),
-  }
-}
-
-function remember(userId: string | null) {
-  try {
-    if (userId) localStorage.setItem(SESSION_KEY, userId)
-    else localStorage.removeItem(SESSION_KEY)
-  } catch {
-    // Session falls back to memory only.
   }
 }
 
@@ -40,7 +30,7 @@ export interface RegisterInput {
 export const authService = {
   restore(): Session | null {
     try {
-      const id = localStorage.getItem(SESSION_KEY)
+      const id = sessionUserId()
       const user = id ? db.users.find((u) => u.id === id) : undefined
       // A suspension takes effect on the next visit, not only at the next sign-in.
       if (user?.status === "suspended") {

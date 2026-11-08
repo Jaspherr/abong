@@ -40,14 +40,13 @@ export interface VerificationRequest {
   reviewerNote?: string
 }
 
+/** A count worked out from the records themselves, with how many of them are recent. */
 export interface AdminMetric {
   id: string
   label: string
   value: number
-  /** Change vs. previous 30 days, as a fraction (0.12 = +12%). */
-  delta: number
-  series: number[]
-  format?: "number" | "percent"
+  /** How many of `value` joined or were created in the last 30 days. */
+  recent: number
 }
 
 export type ActivityKind =
@@ -58,6 +57,7 @@ export type ActivityKind =
   | "report-filed"
   | "inquiry"
   | "viewing"
+  | "listing-moderated"
 
 export interface ActivityEvent {
   id: string
@@ -69,3 +69,27 @@ export interface ActivityEvent {
 }
 
 export type ModerationAction = "approve" | "reject" | "suspend" | "request-changes" | "archive"
+
+/** What an admin decision was about. */
+export type AuditArea = "listing" | "verification" | "report" | "account"
+
+/**
+ * One admin decision, kept for accountability. Written by the service that made the
+ * change, which takes the admin from the session rather than from the caller.
+ */
+export interface AuditEntry {
+  id: string
+  at: string
+  area: AuditArea
+  actorId: string
+  actorName: string
+  /** The record the decision was about: a listing, verification request, report or user id. */
+  targetId: string
+  /** A readable name for the target, kept as it was at the time. */
+  targetLabel: string
+  /** Short past-tense description, e.g. "Suspended account". */
+  action: string
+  from?: string
+  to?: string
+  note?: string
+}

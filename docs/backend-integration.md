@@ -12,7 +12,10 @@ The UI never touches mock data directly. Everything goes through `apps/web/src/s
 ## Rules the backend must enforce
 
 - **Unreviewed listings:** only the owner and admins may read a `pending-review` listing. The mock lets anyone with the link open it because the browser can't enforce this.
-- **Ownership:** check the caller on every admin, inquiry and viewing call. Today's mock services trust the IDs they're given.
+- **Ownership:** check the caller on every inquiry and viewing call. Today's mock services trust the IDs they're given.
+- **Admin calls:** every `adminService` method and `verificationService.listQueue`/`review` must check that the caller is an active admin, using the server session. The mock services already refuse other callers (`requireAdmin()` in `services/mock/session.ts`), but that check runs in the browser and reads `localStorage`, so it is not security.
+- **Decision rules:** the server must enforce what the mock enforces: allowed moderation actions per listing status (`MODERATION_ACTIONS`), report transitions (`REPORT_TRANSITIONS`), only pending verifications can be decided, and a note of at least `DECISION_NOTE_MIN` characters to reject, suspend, request changes, close a report or suspend an account.
+- **Audit log:** record every admin decision in an append-only table in the same transaction as the change: actor from the session, time, area, target, status before and after, and note. Admins read it; nobody edits or deletes it. Today it lives in the demo store (`auditLog`), so it is per-browser and can be cleared.
 - **Suspension:** end existing sessions when an account is suspended, and hide that landlord's listings.
 - **Re-review:** send a live listing back to review on address and rent changes, as `properties.service.ts` does.
 
@@ -28,7 +31,8 @@ The UI never touches mock data directly. Everything goes through `apps/web/src/s
 | `viewingsService.*` | `GET /me/viewings`, `POST /viewings`, `PATCH /viewings/:id` |
 | `propertiesService.*` | `/landlord/properties`, `/landlord/properties/:id/units` |
 | `verificationService.*` | `/landlord/verification`, `/admin/verifications/:id/review` |
-| `adminService.*` | `/admin/overview`, `/admin/users`, `/admin/listings/:id/moderate`, `/admin/reports` |
+| `adminService.*` | `/admin/overview`, `/admin/users`, `/admin/users/:id/status`, `/admin/listings/:id/moderate`, `/admin/reports/:id` |
+| `adminService.listAudit`, `getHistory` | `GET /admin/audit?area=&page=`, `GET /admin/audit?target=` |
 | `reportsService.create` | `POST /listings/:id/reports` |
 
 Geospatial search (`near`, distance sort, bounding-box map queries) belongs on the server (e.g. PostGIS). The client currently filters within 5 km of the anchor.

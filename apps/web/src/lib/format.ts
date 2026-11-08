@@ -28,11 +28,6 @@ export function formatPercent(value: number, digits = 0) {
   return `${(value * 100).toFixed(digits)}%`
 }
 
-export function formatSignedPercent(value: number) {
-  const pct = Math.round(value * 100)
-  return `${pct > 0 ? "+" : ""}${pct}%`
-}
-
 export function formatDistance(km: number) {
   if (km < 1) return `${Math.max(50, Math.round((km * 1000) / 50) * 50)} m`
   return `${km < 10 ? km.toFixed(1) : Math.round(km)} km`

@@ -12,23 +12,23 @@ import { Label } from "@/components/ui/label"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Textarea } from "@/components/ui/textarea"
 import { PATHS } from "@/constants/app"
-import { LISTING_STATUS, REPORT_REASONS, REPORT_STATUS } from "@/constants/status"
+import {
+  DECISION_NOTE_MIN,
+  LISTING_STATUS,
+  MODERATION_ACTIONS,
+  MODERATION_NEEDS_NOTE,
+  REPORT_REASONS,
+  REPORT_STATUS,
+} from "@/constants/status"
 import { fullAddress, typeLabel } from "@/features/listings/listing-utils"
 import { formatMonths, formatPeso, formatRelative } from "@/lib/format"
 import { qk } from "@/lib/query"
 import { adminService } from "@/services"
 import type { ListingStatus, ModerationAction } from "@/types"
+import { decisionError } from "./decision-error"
+import { DecisionHistory } from "./decision-history"
 import { DecisionBar, FactList } from "./review-split"
 import { VerificationChecks } from "./verification-checks"
-
-const ACTIONS_FOR: Record<ListingStatus, ModerationAction[]> = {
-  "pending-review": ["reject", "request-changes", "approve"],
-  active: ["archive", "suspend"],
-  suspended: ["archive", "approve"],
-  rejected: ["approve"],
-  draft: [],
-  archived: [],
-}
 
 const ACTION_LABEL: Record<ModerationAction, string> = {
   approve: "Approve",
@@ -50,9 +50,6 @@ const NO_ACTIONS_HELP: Partial<Record<ListingStatus, string>> = {
   draft: "The landlord hasn't submitted this listing yet, so there's nothing to decide.",
   archived: "This listing was archived. The landlord can restore it as a draft and resubmit.",
 }
-
-/** Note is required whenever the landlord needs to act on the decision. */
-const NEEDS_NOTE: ModerationAction[] = ["request-changes", "reject", "suspend"]
 
 export function ListingReview({ listingId, onDecided }: { listingId: string; onDecided: () => void }) {
   const client = useQueryClient()
@@ -76,11 +73,11 @@ export function ListingReview({ listingId, onDecided }: { listingId: string; onD
       setNote("")
       onDecided()
     },
-    onError: () => toast.error("That didn't save. Try again."),
+    onError: (error) => toast.error(decisionError(error)),
   })
 
   const run = (action: ModerationAction) => {
-    if (NEEDS_NOTE.includes(action) && note.trim().length < 10) {
+    if (MODERATION_NEEDS_NOTE.includes(action) && note.trim().length < DECISION_NOTE_MIN) {
       setNoteError(true)
       return
     }
@@ -91,7 +88,7 @@ export function ListingReview({ listingId, onDecided }: { listingId: string; onD
   if (isPending) return <Skeleton className="m-4 h-96" />
 
   const { listing, reports, landlordHidden } = data
-  const actions = ACTIONS_FOR[listing.status]
+  const actions = MODERATION_ACTIONS[listing.status]
 
   return (
     <>
@@ -180,6 +177,8 @@ export function ListingReview({ listingId, onDecided }: { listingId: string; onD
             <p className="text-sm text-muted-foreground">{listing.moderationNote}</p>
           </section>
         )}
+
+        <DecisionHistory targetIds={[listing.id]} />
 
         {NO_ACTIONS_HELP[listing.status] && <p className="border-t border-border pt-5 text-sm text-muted-foreground">{NO_ACTIONS_HELP[listing.status]}</p>}
       </div>

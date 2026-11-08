@@ -1,6 +1,9 @@
+import { DECISION_NOTE_MIN, VERIFICATION_STATUS, VERIFICATION_TYPES } from "@/constants/status"
 import type { LandlordProfile, VerificationDocument, VerificationRequest, VerificationStatus, VerificationType } from "@/types"
+import { recordDecision, requireNote } from "./audit"
 import { db, nextId } from "./mock/db"
-import { notFound, respond } from "./mock/latency"
+import { ServiceError, notFound, respond } from "./mock/latency"
+import { requireAdmin } from "./mock/session"
 
 export interface LandlordVerificationState {
   statuses: LandlordProfile["verifications"]
@@ -57,8 +60,9 @@ export const verificationService = {
   },
 
   listQueue(): Promise<VerificationQueueItem[]> {
-    return respond(() =>
-      db.verificationRequests
+    return respond(() => {
+      requireAdmin()
+      return db.verificationRequests
         .map((r) => {
           const profile = db.landlordProfiles.find((l) => l.id === r.landlordId)
           const user = profile && db.users.find((u) => u.id === profile.userId)
@@ -69,16 +73,39 @@ export const verificationService = {
             propertyName: db.properties.find((p) => p.id === r.propertyId)?.name,
           }
         })
-        .sort((a, b) => Date.parse(b.submittedAt) - Date.parse(a.submittedAt)),
-    )
+        .sort((a, b) => Date.parse(b.submittedAt) - Date.parse(a.submittedAt))
+    })
   },
 
+  /**
+   * Decides a pending request. Anything short of approval needs a note, because the
+   * landlord has to know what to send again.
+   */
   review(requestId: string, decision: Extract<VerificationStatus, "verified" | "rejected" | "needs-update">, note?: string) {
     return respond(() => {
+      const admin = requireAdmin()
       const request = db.verificationRequests.find((r) => r.id === requestId) ?? notFound("Verification request")
+      if (request.status !== "pending") {
+        throw new ServiceError("invalid", "This request has already been reviewed. Reload to see the decision.")
+      }
+      const cleanNote =
+        decision === "verified"
+          ? note?.trim() || undefined
+          : requireNote(note, DECISION_NOTE_MIN, "Explain what's wrong in at least 10 characters, so the landlord can fix it.")
+
       request.status = decision
       request.reviewedAt = new Date().toISOString()
-      request.reviewerNote = note
+      request.reviewerNote = cleanNote
+      const landlord = db.landlordProfiles.find((l) => l.id === request.landlordId)
+      recordDecision(admin, {
+        area: "verification",
+        targetId: request.id,
+        targetLabel: `${VERIFICATION_TYPES[request.type].label} check: ${landlord?.displayName ?? "Unknown landlord"}`,
+        action: decision === "verified" ? "Approved verification" : decision === "rejected" ? "Rejected verification" : "Asked for an update",
+        from: VERIFICATION_STATUS.pending.label,
+        to: VERIFICATION_STATUS[decision].label,
+        note: cleanNote,
+      })
       syncProfile(request.landlordId, request.type, decision)
       if (request.propertyId) {
         const property = db.properties.find((p) => p.id === request.propertyId)

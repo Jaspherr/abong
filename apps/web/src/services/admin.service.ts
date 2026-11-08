@@ -1,8 +1,19 @@
 import { weeklySeries } from "@/data/moderation"
+import {
+  ACCOUNT_STATUS,
+  DECISION_NOTE_MIN,
+  LISTING_STATUS,
+  MODERATION_ACTIONS,
+  MODERATION_NEEDS_NOTE,
+  REPORT_STATUS,
+  REPORT_TRANSITIONS,
+} from "@/constants/status"
 import type {
   AccountStatus,
   ActivityEvent,
   AdminMetric,
+  AuditArea,
+  AuditEntry,
   LandlordProfile,
   ListingStatus,
   ModerationAction,
@@ -11,11 +22,13 @@ import type {
   User,
   UserRole,
 } from "@/types"
+import { recordDecision, requireNote } from "./audit"
 import { toListing } from "./listings.service"
 import { places } from "./locations.service"
 import { isLandlordVisible } from "./visibility"
-import { db } from "./mock/db"
+import { db, nextId } from "./mock/db"
 import { ServiceError, notFound, respond } from "./mock/latency"
+import { requireAdmin } from "./mock/session"
 
 export interface UserQuery {
   search?: string
@@ -63,6 +76,24 @@ export interface ReportWithContext extends Report {
 
 const countBy = <T,>(list: T[], pred: (item: T) => boolean) => list.filter(pred).length
 
+const DAY_MS = 86_400_000
+/** Whether a date falls in the last 30 days. */
+const isRecent = (iso: string, now: number) => now - Date.parse(iso) <= 30 * DAY_MS
+
+export interface AuditQuery {
+  area?: AuditArea | "all"
+  page?: number
+  pageSize?: number
+}
+
+const ACTION_DONE: Record<ModerationAction, string> = {
+  approve: "Approved listing",
+  reject: "Rejected listing",
+  suspend: "Suspended listing",
+  "request-changes": "Asked for changes",
+  archive: "Archived listing",
+}
+
 const MODERATION_RESULT: Record<ModerationAction, ListingStatus> = {
   approve: "active",
   reject: "rejected",
@@ -74,15 +105,21 @@ const MODERATION_RESULT: Record<ModerationAction, ListingStatus> = {
 export const adminService = {
   getOverview(): Promise<{ metrics: AdminMetric[]; activity: ActivityEvent[]; queue: { listings: number; verifications: number; reports: number } }> {
     return respond(() => {
-      const renters = countBy(db.users, (u) => u.role === "renter")
-      const landlords = countBy(db.users, (u) => u.role === "landlord")
-      const active = countBy(db.properties, (p) => p.status === "active")
-      // Demo totals scale the seed data up so the dashboard reads like a live platform.
+      requireAdmin()
+      // Counted from the records themselves, so the numbers move when the data does.
+      const now = Date.now()
+      const people = db.users.filter((u) => u.role !== "admin")
+      const metric = (id: string, label: string, dates: string[]): AdminMetric => ({
+        id,
+        label,
+        value: dates.length,
+        recent: countBy(dates, (at) => isRecent(at, now)),
+      })
       const metrics: AdminMetric[] = [
-        { id: "users", label: "Total users", value: 2400 + renters + landlords, delta: 0.14, series: weeklySeries.signups },
-        { id: "renters", label: "Renters", value: 2180 + renters, delta: 0.16, series: weeklySeries.signups.map((v) => Math.round(v * 0.86)) },
-        { id: "landlords", label: "Landlords", value: 230 + landlords, delta: 0.07, series: weeklySeries.signups.map((v) => Math.round(v * 0.14)) },
-        { id: "listings", label: "Active listings", value: 380 + active, delta: 0.09, series: weeklySeries.newListings },
+        metric("users", "Renters and landlords", people.map((u) => u.joinedAt)),
+        metric("renters", "Renters", people.filter((u) => u.role === "renter").map((u) => u.joinedAt)),
+        metric("landlords", "Landlords", people.filter((u) => u.role === "landlord").map((u) => u.joinedAt)),
+        metric("listings", "Active listings", db.properties.filter((p) => p.status === "active").map((p) => p.createdAt)),
       ]
       return {
         metrics,
@@ -98,6 +135,7 @@ export const adminService = {
 
   getAnalytics() {
     return respond(() => {
+      requireAdmin()
       const byTown = db.municipalities
         .map((m) => ({
           label: m.name.replace(" City", ""),
@@ -120,6 +158,7 @@ export const adminService = {
 
   listUsers(query: UserQuery = {}): Promise<Paged<User>> {
     return respond(() => {
+      requireAdmin()
       const { search = "", role = "all", status = "all", page: requested = 1, pageSize = 8 } = query
       const q = search.trim().toLowerCase()
       const filtered = db.users
@@ -133,18 +172,43 @@ export const adminService = {
     })
   },
 
-  setUserStatus(userId: string, status: AccountStatus) {
+  /**
+   * Suspends or reactivates an account. Suspending needs a reason, kept on the account and
+   * in the audit log. Admin accounts, including the caller's own, can't be changed here.
+   */
+  setUserStatus(userId: string, status: Extract<AccountStatus, "active" | "suspended">, reason?: string) {
     return respond(() => {
+      const admin = requireAdmin()
       const user = db.users.find((u) => u.id === userId) ?? notFound("User")
       if (user.role === "admin") throw new ServiceError("forbidden", "Admin accounts can't be changed here.")
+      if (user.status === status) {
+        throw new ServiceError("invalid", `This account is already ${ACCOUNT_STATUS[status].label.toLowerCase()}.`)
+      }
+      const note =
+        status === "suspended"
+          ? requireNote(reason, DECISION_NOTE_MIN, "Give a reason for the suspension, at least 10 characters.")
+          : reason?.trim() || undefined
+
+      const from = user.status
       user.status = status
+      user.statusReason = status === "suspended" ? note : undefined
+      recordDecision(admin, {
+        area: "account",
+        targetId: user.id,
+        targetLabel: user.name,
+        action: status === "suspended" ? "Suspended account" : "Reactivated account",
+        from: ACCOUNT_STATUS[from].label,
+        to: ACCOUNT_STATUS[status].label,
+        note,
+      })
       return user
     })
   },
 
   listLandlords(): Promise<AdminLandlordRow[]> {
-    return respond(() =>
-      db.landlordProfiles.map((profile) => {
+    return respond(() => {
+      requireAdmin()
+      return db.landlordProfiles.map((profile) => {
         const user = db.users.find((u) => u.id === profile.userId) ?? notFound("User")
         const owned = db.properties.filter((p) => p.landlordId === profile.id)
         const ids = new Set(owned.map((p) => p.id))
@@ -155,13 +219,14 @@ export const adminService = {
           activeListings: countBy(owned, (p) => p.status === "active"),
           openReports: countBy(db.reports, (r) => ids.has(r.listingId) && (r.status === "open" || r.status === "investigating")),
         }
-      }),
-    )
+      })
+    })
   },
 
   listModeration(): Promise<ModerationItem[]> {
-    return respond(() =>
-      db.properties
+    return respond(() => {
+      requireAdmin()
+      return db.properties
         .map((p) => {
           const landlord = db.landlordProfiles.find((l) => l.id === p.landlordId)
           return {
@@ -178,12 +243,13 @@ export const adminService = {
             isVerified: toListing(p).isVerified,
           }
         })
-        .sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt)),
-    )
+        .sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt))
+    })
   },
 
   getListingForReview(id: string) {
     return respond(() => {
+      requireAdmin()
       const property = db.properties.find((p) => p.id === id) ?? notFound("Listing")
       return {
         listing: toListing(property),
@@ -194,27 +260,55 @@ export const adminService = {
     })
   },
 
+  /**
+   * Applies a moderation decision. Only the decisions allowed from the listing's current
+   * status go through, and the ones the landlord has to act on need a note.
+   */
   moderate(id: string, action: ModerationAction, note?: string) {
     return respond(() => {
+      const admin = requireAdmin()
       const property = db.properties.find((p) => p.id === id) ?? notFound("Listing")
+      if (!MODERATION_ACTIONS[property.status].includes(action)) {
+        throw new ServiceError(
+          "invalid",
+          `A listing that's ${LISTING_STATUS[property.status].label.toLowerCase()} can't be changed that way. Reload to see where it stands.`,
+        )
+      }
+      const cleanNote = MODERATION_NEEDS_NOTE.includes(action)
+        ? requireNote(note, DECISION_NOTE_MIN, "Add a note of at least 10 characters so the landlord knows what to fix.")
+        : note?.trim() || undefined
+
+      const from = property.status
+      const now = new Date().toISOString()
       property.status = MODERATION_RESULT[action]
-      property.updatedAt = new Date().toISOString()
+      property.updatedAt = now
       // Kept so the landlord can see what to fix; a listing that goes live has nothing left to fix.
-      property.moderationNote = action === "approve" ? undefined : note
+      property.moderationNote = action === "approve" ? undefined : cleanNote
+      recordDecision(admin, {
+        area: "listing",
+        targetId: property.id,
+        targetLabel: property.name,
+        action: ACTION_DONE[action],
+        from: LISTING_STATUS[from].label,
+        to: LISTING_STATUS[property.status].label,
+        note: cleanNote,
+      })
       db.activity.unshift({
-        id: `a-${Date.now()}`,
-        kind: action === "approve" ? "listing-approved" : "listing-submitted",
-        title: `${property.name} ${action === "approve" ? "approved" : action === "request-changes" ? "sent back for changes" : `${MODERATION_RESULT[action]}`}`,
-        detail: note || "No note",
-        at: new Date().toISOString(),
+        id: nextId("a"),
+        kind: action === "approve" ? "listing-approved" : "listing-moderated",
+        title: `${property.name}: ${ACTION_DONE[action].toLowerCase()}`,
+        detail: cleanNote ?? `By ${admin.name}`,
+        at: now,
+        href: `/admin/listings?review=${property.id}`,
       })
       return property.status
     })
   },
 
   listReports(): Promise<ReportWithContext[]> {
-    return respond(() =>
-      db.reports
+    return respond(() => {
+      requireAdmin()
+      return db.reports
         .map((r) => {
           const property = db.properties.find((p) => p.id === r.listingId)
           const landlord = db.landlordProfiles.find((l) => l.id === property?.landlordId)
@@ -226,16 +320,60 @@ export const adminService = {
             reporterName: db.users.find((u) => u.id === r.reporterId)?.name ?? "Anonymous visitor",
           }
         })
-        .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt)),
-    )
+        .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))
+    })
   },
 
+  /** Moves a report on. Closing it, as resolved or dismissed, needs a note saying why. */
   updateReport(id: string, status: ReportStatus, resolutionNote?: string) {
     return respond(() => {
+      const admin = requireAdmin()
       const report = db.reports.find((r) => r.id === id) ?? notFound("Report")
+      if (!REPORT_TRANSITIONS[report.status].includes(status)) {
+        throw new ServiceError(
+          "invalid",
+          `This report is already ${REPORT_STATUS[report.status].label.toLowerCase()}. Reload to see where it stands.`,
+        )
+      }
+      const closing = status === "resolved" || status === "dismissed"
+      const note = closing
+        ? requireNote(resolutionNote, DECISION_NOTE_MIN, "Add a note of at least 10 characters saying what you found.")
+        : resolutionNote?.trim() || undefined
+
+      const from = report.status
       report.status = status
-      if (resolutionNote) report.resolutionNote = resolutionNote
+      if (closing) report.resolutionNote = note
+      const listing = db.properties.find((p) => p.id === report.listingId)
+      recordDecision(admin, {
+        area: "report",
+        targetId: report.id,
+        targetLabel: `Report on ${listing?.name ?? "a removed listing"}`,
+        action: status === "investigating" ? "Started investigating" : status === "resolved" ? "Resolved report" : "Dismissed report",
+        from: REPORT_STATUS[from].label,
+        to: REPORT_STATUS[status].label,
+        note,
+      })
       return report
+    })
+  },
+
+  /** The audit log, newest first, one page at a time. */
+  listAudit(query: AuditQuery = {}): Promise<Paged<AuditEntry>> {
+    return respond(() => {
+      requireAdmin()
+      const { area = "all", page: requested = 1, pageSize = 20 } = query
+      const filtered = db.auditLog.filter((e) => area === "all" || e.area === area)
+      const page = Math.min(requested, Math.max(1, Math.ceil(filtered.length / pageSize)))
+      return { rows: filtered.slice((page - 1) * pageSize, page * pageSize), total: filtered.length, page, pageSize }
+    })
+  },
+
+  /** Every decision recorded about these records, newest first. */
+  getHistory(targetIds: string[]): Promise<AuditEntry[]> {
+    return respond(() => {
+      requireAdmin()
+      const ids = new Set(targetIds)
+      return db.auditLog.filter((e) => ids.has(e.targetId))
     })
   },
 }

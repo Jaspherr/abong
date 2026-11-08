@@ -43,6 +43,7 @@ export const PATHS = {
     verifications: "/admin/verifications",
     reports: "/admin/reports",
     analytics: "/admin/analytics",
+    audit: "/admin/audit",
   },
 } as const
 

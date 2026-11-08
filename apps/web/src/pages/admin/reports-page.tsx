@@ -223,7 +223,13 @@ function ReportsPage() {
                 <ReportReview
                   key={selected.id}
                   report={selected}
+                  related={(data ?? []).filter((other) => other.id !== selected.id && other.listingId === selected.listingId)}
                   onClosed={() => advance(selected.id, ids)}
+                  onOpenRelated={(id) => {
+                    const target = data?.find((other) => other.id === id)
+                    if (target) setTab(isOpenReport(target.status) ? "open" : "closed")
+                    setReview(id)
+                  }}
                 />
               ) : (
                 <EmptyState

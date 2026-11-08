@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query"
 import {
   BarChart3,
   ExternalLink,
+  History,
   Flag,
   Gauge,
   LayoutList,
@@ -51,7 +52,13 @@ const RAIL: RailGroup[] = [
       { to: PATHS.admin.landlords, label: "Landlords", icon: UsersRound },
     ],
   },
-  { label: "Marketplace", items: [{ to: PATHS.admin.analytics, label: "Analytics", icon: BarChart3 }] },
+  {
+    label: "Marketplace",
+    items: [
+      { to: PATHS.admin.analytics, label: "Analytics", icon: BarChart3 },
+      { to: PATHS.admin.audit, label: "Audit log", icon: History },
+    ],
+  },
 ]
 
 function RailLink({ item, count }: { item: RailItem; count?: number }) {

@@ -242,6 +242,7 @@ test("every admin page opens without page overflow", async ({ page }) => {
     ["/admin/users", "Users"],
     ["/admin/landlords", "Landlords"],
     ["/admin/analytics", "Analytics"],
+    ["/admin/audit", "Audit log"],
     ["/admin/profile", "Profile"],
   ] as const) {
     await page.goto(path)
@@ -319,7 +320,7 @@ test("admin reviews a verification, and rejecting needs a note", async ({ page }
   await page.goto("/admin/verifications")
   await page.getByRole("list", { name: "Verification requests" }).getByRole("button").first().click()
   await page.getByRole("button", { name: "Request update" }).click()
-  await expect(page.getByText("Explain what's wrong so the landlord can fix it.")).toBeVisible()
+  await expect(page.getByText("Explain what's wrong in at least 10 characters, so the landlord can fix it.")).toBeVisible()
   await page.getByLabel("Note to landlord").fill("The ID photo is too blurry to read.")
   await page.getByRole("button", { name: "Request update" }).click()
   await expect(page.getByText("Asked landlord for an update")).toBeVisible()
@@ -367,6 +368,7 @@ test("admin can search, filter and suspend users, with a confirmation", async ({
 
   await page.getByRole("button", { name: "Actions for Mika Reyes" }).click()
   await page.getByRole("menuitem", { name: "Suspend account" }).click()
+  await page.getByRole("alertdialog").getByLabel("Reason for suspension").fill("Asked renters for payment before any viewing.")
   await page.getByRole("alertdialog").getByRole("button", { name: "Suspend account" }).click()
   await expect(page.getByText("Mika Reyes is now suspended")).toBeVisible()
 
@@ -380,6 +382,92 @@ test("admin can search, filter and suspend users, with a confirmation", async ({
   // Admin accounts offer no actions at all, on either layout.
   await expect(page.getByRole("img", { name: /is an admin/ }).first()).toBeVisible()
   await expect(page.getByRole("button", { name: /Actions for/ })).toHaveCount(0)
+})
+
+test.describe("admin accountability", () => {
+  test("a moderation decision is recorded with who made it and why", async ({ page }) => {
+    const note = "Photos show a different building from the address."
+    await signInAs(page, "admin")
+    await page.goto("/admin/listings?review=lingayen-beach-apartment")
+    await page.getByLabel("Note to landlord").fill(note)
+    await page.getByRole("button", { name: "Reject" }).click()
+    await expect(page.getByText("Listing rejected")).toBeVisible()
+
+    // The listing's own history shows the decision.
+    await page.goto("/admin/listings?review=lingayen-beach-apartment")
+    const history = page.getByRole("heading", { name: "Decision history" }).locator("xpath=..")
+    await expect(history.getByText("Rejected listing")).toBeVisible()
+    await expect(history.getByText(note)).toBeVisible()
+    await expect(history.getByText(/Carla Fernandez/)).toBeVisible()
+    await expect(history.getByText(/Pending review to Rejected/)).toBeVisible()
+
+    // And so does the audit log, filtered to listings.
+    await page.goto("/admin/audit")
+    await expect(page.getByText("Estanza Apartment")).toBeVisible()
+    await page.getByRole("tab", { name: "Accounts" }).click()
+    await expect(page.getByText("No accounts decisions yet")).toBeVisible()
+    await page.getByRole("tab", { name: "Listings" }).click()
+    await expect(page.getByText(note)).toBeVisible()
+  })
+
+  test("suspending an account needs a reason, which stays with the account", async ({ page }) => {
+    await signInAs(page, "admin")
+    await page.goto("/admin/users")
+    await page.getByRole("searchbox", { name: "Search users" }).fill("mika")
+    await page.getByRole("button", { name: "Actions for Mika Reyes" }).click()
+    await page.getByRole("menuitem", { name: "Suspend account" }).click()
+    const dialog = page.getByRole("alertdialog")
+    await dialog.getByRole("button", { name: "Suspend account" }).click()
+    await expect(dialog.getByText("Give a reason of at least 10 characters.", { exact: false })).toBeVisible()
+    await expect(dialog.getByLabel("Reason for suspension")).toHaveAttribute("aria-invalid", "true")
+
+    await dialog.getByLabel("Reason for suspension").fill("Repeated fake booking requests.")
+    await dialog.getByRole("button", { name: "Suspend account" }).click()
+    await expect(page.getByText("Mika Reyes is now suspended")).toBeVisible()
+    // Shown in whichever layout is on screen: the table on desktop, the card list on phones.
+    await expect(page.getByText("Repeated fake booking requests.").filter({ visible: true })).toBeVisible()
+
+    await page.goto("/admin/audit")
+    await expect(page.getByText("Suspended account")).toBeVisible()
+    await expect(page.getByText("Repeated fake booking requests.")).toBeVisible()
+  })
+
+  test("closing a report needs a finding", async ({ page }) => {
+    await signInAs(page, "admin")
+    await page.goto("/admin/reports")
+    const reports = page.getByRole("list", { name: "Reports" })
+    await reports.getByRole("button").first().click()
+    await page.getByRole("button", { name: "Dismiss" }).click()
+    await expect(page.getByText("Add a note of at least 10 characters saying what you found.")).toBeVisible()
+    await expect(page.getByText("Report dismissed")).toHaveCount(0)
+
+    await page.getByLabel("Resolution note").fill("Duplicate of an earlier report, already handled.")
+    await page.getByRole("button", { name: "Dismiss" }).click()
+    await expect(page.getByText("Report dismissed")).toBeVisible()
+  })
+
+  test("admin services refuse a session that isn't an admin's", async ({ page }) => {
+    await signInAs(page, "admin")
+    await page.goto("/admin/users")
+    await expect(page.getByRole("button", { name: /Actions for/ }).first()).toBeVisible()
+
+    // The page is still open, but the stored session now belongs to a renter.
+    await page.evaluate(() => localStorage.setItem("abong:session", "u-renter-1"))
+    await page.getByRole("searchbox", { name: "Search users" }).fill("mika")
+    await expect(page.getByText("This section didn't load")).toBeVisible()
+    await expect(page.getByRole("button", { name: "Actions for Mika Reyes" })).toHaveCount(0)
+  })
+
+  test("the overview counts real records, not padded totals", async ({ page }) => {
+    await signInAs(page, "admin")
+    const snapshot = page.getByRole("region", { name: "Platform snapshot" })
+    await expect(snapshot.getByText("Renters and landlords")).toBeVisible()
+    await expect(snapshot.getByText("new in the last 30 days").first()).toBeVisible()
+    const totals = await snapshot.locator(".font-display").allTextContents()
+    expect(totals).toHaveLength(4)
+    // The demo has a few dozen accounts and listings; earlier versions added thousands.
+    for (const total of totals) expect(Number(total.replace(/,/g, ""))).toBeLessThan(200)
+  })
 })
 
 /** Waits for the demo database to reach storage, so a change survives the next page load. */
@@ -405,6 +493,7 @@ test("a suspended account is signed out on the next visit", async ({ page }) => 
   await page.getByRole("searchbox", { name: "Search users" }).fill("mika")
   await page.getByRole("button", { name: "Actions for Mika Reyes" }).click()
   await page.getByRole("menuitem", { name: "Suspend account" }).click()
+  await page.getByRole("alertdialog").getByLabel("Reason for suspension").fill("Asked renters for payment before any viewing.")
   await page.getByRole("alertdialog").getByRole("button", { name: "Suspend account" }).click()
   await expect(page.getByText("Mika Reyes is now suspended")).toBeVisible()
   await savedAccountStatus(page, "u-renter-1", "suspended")
@@ -464,6 +553,7 @@ test("suspending a landlord hides their listings until they're reactivated", asy
   await page.getByRole("button", { name: "Actions for Teresita Santos" }).click()
   await page.getByRole("menuitem", { name: "Suspend account" }).click()
   await expect(page.getByRole("alertdialog").getByText("their listings are hidden from renters")).toBeVisible()
+  await page.getByRole("alertdialog").getByLabel("Reason for suspension").fill("Asked renters for payment before any viewing.")
   await page.getByRole("alertdialog").getByRole("button", { name: "Suspend account" }).click()
   await expect(page.getByText("Teresita Santos is now suspended")).toBeVisible()
   await savedAccountStatus(page, "u-landlord-1", "suspended")
@@ -528,6 +618,7 @@ test("a change survives leaving the page straight away", async ({ page }) => {
   await page.getByRole("searchbox", { name: "Search users" }).fill("mika")
   await page.getByRole("button", { name: "Actions for Mika Reyes" }).click()
   await page.getByRole("menuitem", { name: "Suspend account" }).click()
+  await page.getByRole("alertdialog").getByLabel("Reason for suspension").fill("Asked renters for payment before any viewing.")
   await page.getByRole("alertdialog").getByRole("button", { name: "Suspend account" }).click()
   await expect(page.getByText("Mika Reyes is now suspended")).toBeVisible()
   // No waiting for the debounced save.

@@ -1,6 +1,8 @@
 import type {
   AccountStatus,
+  AuditArea,
   ListingStatus,
+  ModerationAction,
   ReportReason,
   ReportStatus,
   UserRole,
@@ -78,6 +80,40 @@ export const REPORT_REASONS: Record<ReportReason, { label: string; hint: string 
   "inappropriate-content": { label: "Inappropriate content", hint: "Offensive text or photos" },
   "suspicious-landlord": { label: "Suspicious landlord", hint: "Identity or behaviour seems off" },
   other: { label: "Something else", hint: "Tell us what happened" },
+}
+
+/** Notes that someone has to act on, or that explain a decision later, need at least this much. */
+export const DECISION_NOTE_MIN = 10
+
+/**
+ * Which moderation decisions each listing status allows. The service enforces this, and
+ * the review panel uses it to decide which buttons to show.
+ */
+export const MODERATION_ACTIONS: Record<ListingStatus, ModerationAction[]> = {
+  "pending-review": ["reject", "request-changes", "approve"],
+  active: ["archive", "suspend"],
+  suspended: ["archive", "approve"],
+  rejected: ["approve"],
+  draft: [],
+  archived: [],
+}
+
+/** Moderation decisions the landlord has to act on, so they need a note. */
+export const MODERATION_NEEDS_NOTE: ModerationAction[] = ["request-changes", "reject", "suspend"]
+
+/** Where a report can go from each status. Closed reports stay closed. */
+export const REPORT_TRANSITIONS: Record<ReportStatus, ReportStatus[]> = {
+  open: ["investigating", "resolved", "dismissed"],
+  investigating: ["resolved", "dismissed"],
+  resolved: [],
+  dismissed: [],
+}
+
+export const AUDIT_AREAS: Record<AuditArea, string> = {
+  listing: "Listings",
+  verification: "Verifications",
+  report: "Reports",
+  account: "Accounts",
 }
 
 export const REPORT_STATUS: Record<ReportStatus, StatusMeta> = {

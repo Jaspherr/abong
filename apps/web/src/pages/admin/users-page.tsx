@@ -7,6 +7,7 @@ import { MetaBadge, StatusBadge } from "@/components/common/status-badge"
 import { UserAvatar } from "@/components/common/user-avatar"
 import { EmptyState, ErrorState } from "@/components/feedback/states"
 import { TableSkeleton } from "@/components/feedback/skeletons"
+import { FormField } from "@/components/forms/form-field"
 import { SearchInput } from "@/components/forms/search-input"
 import {
   AlertDialog,
@@ -29,8 +30,10 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { ACCOUNT_STATUS, ROLE_LABELS, VERIFICATION_STATUS, type Tone } from "@/constants/status"
+import { Textarea } from "@/components/ui/textarea"
+import { ACCOUNT_STATUS, DECISION_NOTE_MIN, ROLE_LABELS, VERIFICATION_STATUS, type Tone } from "@/constants/status"
 import { AdminPageHeader, HeaderMetric } from "@/features/admin/admin-page-header"
+import { decisionError } from "@/features/admin/decision-error"
 import { useDocumentTitle } from "@/hooks/use-document-title"
 import { useDebouncedValue } from "@/hooks/use-debounced-value"
 import { formatDate, formatNumber, formatRelative } from "@/lib/format"
@@ -42,6 +45,20 @@ const ROLE_TONE: Record<UserRole, Tone> = {
   renter: "neutral",
   landlord: "brand",
   admin: "info",
+}
+
+/** The account status, with the recorded reason when it's suspended. */
+function AccountStatusCell({ user }: { user: User }) {
+  return (
+    <div className="min-w-0">
+      <MetaBadge meta={ACCOUNT_STATUS[user.status]} />
+      {user.statusReason && (
+        <p className="mt-1 line-clamp-2 max-w-56 text-caption text-muted-foreground" title={user.statusReason}>
+          {user.statusReason}
+        </p>
+      )}
+    </div>
+  )
 }
 
 function RoleBadge({ role }: { role: UserRole }) {
@@ -113,6 +130,16 @@ function UsersPage() {
   const [status, setStatus] = useState<UserQuery["status"]>("all")
   const [page, setPage] = useState(1)
   const [suspending, setSuspending] = useState<User | null>(null)
+  const [reason, setReason] = useState("")
+  const [reasonError, setReasonError] = useState<string | false>(false)
+  const reasonProblem = (value: string) =>
+    value.trim().length < DECISION_NOTE_MIN && "Give a reason of at least 10 characters. It's kept with the account and in the audit log."
+
+  const startSuspending = (user: User | null) => {
+    setSuspending(user)
+    setReason("")
+    setReasonError(false)
+  }
 
   const debounced = useDebouncedValue(search, 250)
   const query: UserQuery = { search: debounced, role, status, page, pageSize: 8 }
@@ -123,17 +150,17 @@ function UsersPage() {
   })
 
   const setAccount = useMutation({
-    mutationFn: ({ user, next }: { user: User; next: AccountStatus }) =>
-      adminService.setUserStatus(user.id, next),
+    mutationFn: ({ user, next, why }: { user: User; next: "active" | "suspended"; why?: string }) =>
+      adminService.setUserStatus(user.id, next, why),
     onSuccess: (updatedUser) => {
       void client.invalidateQueries({ queryKey: ["admin"] })
       // A landlord's status decides whether their listings are public.
       void client.invalidateQueries({ queryKey: ["listings"] })
       void client.invalidateQueries({ queryKey: ["places"] })
-      setSuspending(null)
+      startSuspending(null)
       toast.success(`${updatedUser.name} is now ${ACCOUNT_STATUS[updatedUser.status].label.toLowerCase()}`)
     },
-    onError: () => toast.error("That didn't save. Try again."),
+    onError: (error) => toast.error(decisionError(error)),
   })
 
   const resetPage = <T,>(fn: (value: T) => void) => (value: T) => {
@@ -165,7 +192,7 @@ function UsersPage() {
       user={user}
       busy={setAccount.isPending}
       onCopyEmail={(email) => void copyEmail(email)}
-      onSuspend={setSuspending}
+      onSuspend={startSuspending}
       onReactivate={(account) => setAccount.mutate({ user: account, next: "active" })}
     />
   )
@@ -278,6 +305,7 @@ function UsersPage() {
                             <RoleBadge role={user.role} />
                             <MetaBadge meta={ACCOUNT_STATUS[user.status]} />
                           </div>
+                          {user.statusReason && <p className="mt-2 text-caption text-muted-foreground">{user.statusReason}</p>}
                         </div>
                         {actions(user)}
                       </div>
@@ -329,7 +357,7 @@ function UsersPage() {
                             </div>
                           </TableCell>
                           <TableCell><RoleBadge role={user.role} /></TableCell>
-                          <TableCell><MetaBadge meta={ACCOUNT_STATUS[user.status]} /></TableCell>
+                          <TableCell className="whitespace-normal"><AccountStatusCell user={user} /></TableCell>
                           <TableCell className="hidden text-xs tabular-nums text-muted-foreground xl:table-cell">{formatDate(user.joinedAt)}</TableCell>
                           <TableCell className="text-xs text-muted-foreground">{formatRelative(user.lastActiveAt)}</TableCell>
                           <TableCell className="hidden lg:table-cell"><MetaBadge meta={VERIFICATION_STATUS[user.verification]} /></TableCell>
@@ -355,7 +383,7 @@ function UsersPage() {
         </p>
       </section>
 
-      <AlertDialog open={Boolean(suspending)} onOpenChange={(open) => !open && !setAccount.isPending && setSuspending(null)}>
+      <AlertDialog open={Boolean(suspending)} onOpenChange={(open) => !open && !setAccount.isPending && startSuspending(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Suspend {suspending?.name}?</AlertDialogTitle>
@@ -365,6 +393,18 @@ function UsersPage() {
                 : "They can't sign in until you reactivate the account from this page."}
             </AlertDialogDescription>
           </AlertDialogHeader>
+          <FormField label="Reason for suspension" error={reasonError} hint="Kept with the account and in the audit log." required>
+            <Textarea
+              rows={3}
+              value={reason}
+              onChange={(event) => {
+                setReason(event.target.value)
+                if (reasonError) setReasonError(reasonProblem(event.target.value))
+              }}
+              onBlur={() => reasonError && setReasonError(reasonProblem(reason))}
+              placeholder="e.g. Asked renters for payment before any viewing."
+            />
+          </FormField>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={setAccount.isPending}>Keep account active</AlertDialogCancel>
             <AlertDialogAction
@@ -374,7 +414,9 @@ function UsersPage() {
                 // Radix AlertDialogAction normally closes immediately. Keep it
                 // open until the mutation succeeds, so failures can be retried.
                 event.preventDefault()
-                if (suspending) setAccount.mutate({ user: suspending, next: "suspended" })
+                const problem = reasonProblem(reason)
+                setReasonError(problem)
+                if (suspending && !problem) setAccount.mutate({ user: suspending, next: "suspended", why: reason })
               }}
             >
               {setAccount.isPending && <LoaderCircle className="size-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />}

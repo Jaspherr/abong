@@ -2,6 +2,48 @@
 
 The latest audit comes first. Earlier audits follow for history.
 
+# Admin audit (8 November 2026)
+
+A review of the admin side: every admin page, `admin.service`, `verification.service`, the auth and session code, the route guard, and the domain types. Changes were made where the existing architecture supports them; everything else is listed below. There is still no backend, so none of this is real security.
+
+## What already worked
+
+Role-guarded admin routes; a review desk on the overview with three queues and counts in the nav; listing moderation with per-status actions, a required note to the landlord and a confirmation to archive; verification review with a checklist; report triage with scam reports first and a one-step suspend for live scam listings; a user directory with search, filters, pagination and a confirmed suspend that hides a landlord's listings and ends their session; a landlord directory; analytics marked as demo figures.
+
+## Found and fixed
+
+| # | Pri | Issue | Fix |
+|---|---|---|---|
+| 1 | P0 | Admin services didn't check who was calling; only the route guard did. | Every admin call requires an active admin, read from the session inside the service (`requireAdmin`). Browser-only: see `backend-integration.md`. |
+| 2 | P0 | Decision rules lived only in the buttons: the service would approve a draft, close a closed report, or reject without a note. | Services enforce allowed actions, report transitions, pending-only verification decisions, and required notes. |
+| 3 | P1 | No record of who decided what. Suspensions, report outcomes and verification decisions left no trace; rejections and suspensions were logged as "listing submitted". | Append-only audit log written by the services: actor, time, target, before and after, note. New Audit log page with area filter and pagination; decision history in the listing, verification and report panels. Activity feed uses the right kind. |
+| 4 | P1 | Accounts could be suspended with no reason. | A reason is required, kept on the account, shown in the directory and in the audit log, and cleared on reactivation. |
+| 5 | P1 | Reports could be resolved or dismissed with no finding. | A note is required to close a report. |
+| 6 | P1 | The overview added fixed numbers (2,400 users, 380 listings) and showed invented growth percentages and sparklines, with no demo label. | Real counts, with how many are from the last 30 days. Unused `Sparkline` and `formatSignedPercent` removed. |
+| 7 | P2 | "Suspend listing" from a report under investigation would fail its second step under the new rules. | Only an open report moves to investigating. |
+| 8 | P2 | Duplicate and repeat reports were only visible from the listing. | The report panel lists other reports on the same listing. |
+| 9 | P2 | A resubmitted verification gave no view of earlier attempts. | The panel lists the landlord's earlier submissions of the same check and their notes. |
+| 10 | P2 | Every failure said "That didn't save", even when the service had refused for a reason. | Service refusals are shown as written. |
+
+## Recommended later (P2 and P3)
+
+- Report priority beyond scam reports (suspicious landlord), and an "assigned to" field once there is more than one admin.
+- Bulk-closing duplicate reports with one finding.
+- Filtering the verification queue by landlord from the landlord directory (the link opens the whole queue).
+- CSV export of users and the audit log, once there is a server to generate it with access logging.
+- Admin notifications by email for scam reports; today the nav counts are the only alert.
+- Marketplace settings (review targets, note minimums). Not worth building until they need to change without a release.
+
+## Needs a backend
+
+Real authentication and server-side role checks; a tamper-proof audit table; ending sessions on suspension server-side; verification document storage with access controls; and server-generated metrics. Details in `backend-integration.md`.
+
+## Validation
+
+`npm run check` passes (typecheck, lint with zero warnings, build). `npm run test:e2e`: 145 passed, 13 skipped, 6 failed; the 6 failures (homepage search, filters and a school count, on both layouts) fail the same way on the commit before this work. New tests cover the audit log and decision history, the required suspension reason, the required report finding, the service refusing a non-admin session, and real overview counts. All admin pages were swept at 320, 390, 768, 1024 and 1440 px with scrollbars shown: no horizontal overflow and no console errors. Chromium only; no screen reader.
+
+---
+
 # Engineering audit (5 November 2026)
 
 A whole-codebase audit of the web app, with fixes applied. The app runs entirely on mock services: there is no backend, so nothing here confirms real security. See "Remaining" below.

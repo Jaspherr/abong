@@ -58,6 +58,7 @@ const adminRoutes: RouteObject[] = [
   { path: "verifications", ...page(() => import("@/pages/admin/verifications-page")) },
   { path: "reports", ...page(() => import("@/pages/admin/reports-page")) },
   { path: "analytics", ...page(() => import("@/pages/admin/analytics-page")) },
+  { path: "audit", ...page(() => import("@/pages/admin/audit-page")) },
   { path: "profile", ...page(() => import("@/pages/admin/profile-page")) },
 ]
 

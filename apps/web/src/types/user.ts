@@ -23,6 +23,8 @@ export interface User {
   lastActiveAt: string
   /** Identity-level verification shown on admin tables. */
   verification: VerificationStatus
+  /** Why an admin suspended or deactivated the account. Cleared on reactivation. */
+  statusReason?: string
 }
 
 export type RenterOccupation = "student" | "professional" | "family" | "other"

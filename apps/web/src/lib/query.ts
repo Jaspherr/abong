@@ -41,5 +41,7 @@ export const qk = {
     review: (id: string) => ["admin", "review", id] as const,
     verifications: ["admin", "verifications"] as const,
     reports: ["admin", "reports"] as const,
+    audit: (query: object) => ["admin", "audit", query] as const,
+    history: (ids: string[]) => ["admin", "history", ids] as const,
   },
 }

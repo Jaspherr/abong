@@ -1,6 +1,5 @@
 import { useId, useMemo, useState } from "react"
 import { formatNumber } from "@/lib/format"
-import { cn } from "@/lib/utils"
 
 /*
  * Lightweight SVG charts for admin views. Single-series by design (one hue,
@@ -15,21 +14,6 @@ interface Point {
 const niceMax = (max: number) => {
   const pow = 10 ** Math.floor(Math.log10(Math.max(1, max)))
   return Math.ceil(max / pow) * pow
-}
-
-export function Sparkline({ values, className, label }: { values: number[]; className?: string; label: string }) {
-  const w = 100
-  const h = 28
-  const max = Math.max(...values)
-  const min = Math.min(...values)
-  const pts = values.map((v, i) => [(i / (values.length - 1)) * w, h - 2 - ((v - min) / Math.max(1, max - min)) * (h - 4)])
-  const d = pts.map(([x, y], i) => `${i ? "L" : "M"}${x.toFixed(1)} ${y.toFixed(1)}`).join(" ")
-  return (
-    <svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" className={cn("h-7 w-full", className)} role="img" aria-label={label}>
-      <path d={`${d} L${w} ${h} L0 ${h} Z`} fill="var(--chart-1)" opacity="0.1" />
-      <path d={d} fill="none" stroke="var(--chart-1)" strokeWidth="2" vectorEffect="non-scaling-stroke" strokeLinejoin="round" strokeLinecap="round" />
-    </svg>
-  )
 }
 
 export function TrendChart({ data, title, height = 200, unit = "" }: { data: Point[]; title: string; height?: number; unit?: string }) {

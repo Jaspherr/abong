@@ -192,6 +192,9 @@ function VerificationsPage() {
                 <VerificationReview
                   key={open.id}
                   item={open}
+                  earlier={(data ?? []).filter(
+                    (other) => other.id !== open.id && other.landlordId === open.landlordId && other.type === open.type && other.submittedAt < open.submittedAt,
+                  )}
                   onDecided={() => advance(open.id, ids)}
                 />
               ) : (
