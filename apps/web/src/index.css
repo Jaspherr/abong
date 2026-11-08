@@ -400,6 +400,19 @@
   animation: rise-in 320ms var(--ease-out-soft) both;
 }
 
+/* A carousel slide arriving: it drifts in from the side it travels from while its opacity
+   fades on a transition. Set --slide-dir (1 forward, -1 back) on an ancestor and
+   --slide-drift for the distance. Only the arrival is a keyframe, so a quick change of mind
+   fades the old slide out from wherever it got to instead of restarting it. */
+@keyframes slide-drift-in {
+  from {
+    translate: calc(var(--slide-dir, 1) * var(--slide-drift, 1.5rem)) 0;
+  }
+}
+.animate-slide-drift {
+  animation: slide-drift-in 800ms var(--ease-out-soft) both;
+}
+
 /* Saving a place: a short press and settle so the tap reads as registered. */
 @keyframes save-pop {
   0% {

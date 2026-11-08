@@ -25,7 +25,6 @@ import {
 import { PATHS } from "@/constants/app"
 import { useUniversities } from "@/features/listings/queries"
 import { useDocumentTitle } from "@/hooks/use-document-title"
-import { pluralize } from "@/lib/format"
 import { places } from "@/services"
 import { cn } from "@/lib/utils"
 

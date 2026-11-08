@@ -1,10 +1,21 @@
-import type { ReactNode } from "react";
+import {
+  useEffect,
+  useRef,
+  type CSSProperties,
+  type KeyboardEvent,
+  type PointerEvent,
+  type ReactNode,
+} from "react";
 import {
   ArrowUpRight,
   BadgeCheck,
   Check,
+  ChevronLeft,
+  ChevronRight,
   GraduationCap,
   MapPinned,
+  Pause,
+  Play,
   ShieldAlert,
 } from "lucide-react";
 import { Link } from "react-router";
@@ -32,7 +43,7 @@ import {
 import { GulfMap } from "./gulf-map";
 import { PropertyTypeIllustration } from "./property-type-illustration";
 import { searchUrl } from "./search-params";
-import { useIdleShowcase } from "./use-idle-showcase";
+import { useIdleShowcase, type ShowcaseDirection } from "./use-idle-showcase";
 
 /** A taste of the list; the full one lives on the schools page. */
 const SCHOOL_PREVIEW = 6;
@@ -147,20 +158,7 @@ export function NearSchoolsSection() {
       <div className="grid grid-cols-1 items-start gap-8 lg:min-h-section-body lg:grid-cols-[minmax(0,19rem)_minmax(0,1fr)] lg:items-stretch lg:gap-10 xl:grid-cols-[minmax(0,23rem)_minmax(0,1fr)] xl:gap-14">
         {/* LEFT — SECTION INTRODUCTION */}
         <div className="min-w-0 lg:self-center">
-          <SectionEyebrow
-            className="mb-4 gap-3"
-            marker={
-              <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                <GraduationCap
-                  className="size-4.5"
-                  strokeWidth={1.7}
-                  aria-hidden="true"
-                />
-              </span>
-            }
-          >
-            For students
-          </SectionEyebrow>
+          <SectionEyebrow className="mb-4">For students</SectionEyebrow>
 
           <h2 id="near-schools-title" className="type-display">
             Live closer.
@@ -176,8 +174,9 @@ export function NearSchoolsSection() {
         {/* RIGHT — SCHOOL DIRECTORY */}
         <div className="flex min-w-0 flex-col">
           {/* Directory header */}
+
           <SubsectionHeading
-            className="mb-5 border-b border-border pb-4"
+            className="mb-4"
             label="Find your campus"
             title="Explore schools nearby"
             count={
@@ -190,7 +189,7 @@ export function NearSchoolsSection() {
           {/* LOADING */}
           {isPending ? (
             <ul
-              className="grid grid-cols-1 border-t border-border/70 sm:grid-cols-2 lg:flex-1 lg:auto-rows-fr"
+              className="grid grid-cols-1 sm:grid-cols-2 lg:flex-1 lg:auto-rows-fr"
               aria-label="Loading schools"
             >
               {Array.from({ length: SCHOOL_PREVIEW }, (_, index) => (
@@ -225,8 +224,8 @@ export function NearSchoolsSection() {
                 <li
                   key={school.id}
                   className={cn(
-                    "group min-w-0 border-b border-border/70",
-                    "sm:odd:pr-5 sm:even:border-l sm:even:pl-5",
+                    "group min-w-0 border-b border-border/60",
+                    "sm:odd:pr-5 sm:even:pl-5",
                     "lg:odd:pr-7 lg:even:pl-7",
                   )}
                 >
@@ -523,21 +522,117 @@ export function TownsSection() {
   );
 }
 
+/** Two-digit plate numbers, so "03 / 08" keeps its width from slide to slide. */
+const plateNumber = (n: number) => String(n).padStart(2, "0");
+
+/** Horizontal swipes on touch and pen; vertical movement is left to the page (`touch-action: pan-y`). */
+function useSwipe(onSwipe: (direction: ShowcaseDirection) => void) {
+  const start = useRef<{ x: number; y: number; id: number } | null>(null);
+
+  return {
+    onPointerDown: (event: PointerEvent) => {
+      if (event.pointerType === "mouse") return;
+      start.current = {
+        x: event.clientX,
+        y: event.clientY,
+        id: event.pointerId,
+      };
+    },
+    onPointerUp: (event: PointerEvent) => {
+      const from = start.current;
+      start.current = null;
+      if (!from || from.id !== event.pointerId) return;
+      const dx = event.clientX - from.x;
+      const dy = event.clientY - from.y;
+      if (Math.abs(dx) < 40 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+      onSwipe(dx < 0 ? 1 : -1);
+    },
+    onPointerCancel: () => {
+      start.current = null;
+    },
+  };
+}
+
+/** How long the pointer has to rest on a rail segment before it counts as a choice. */
+const HOVER_INTENT_MS = 140;
+
+/**
+ * Picks an item when a mouse rests on it, not when it merely passes over, so sweeping
+ * across the rail doesn't start a build for every type on the way.
+ */
+function useHoverIntent(pick: (index: number) => void) {
+  const timer = useRef<number | undefined>(undefined);
+  useEffect(() => () => window.clearTimeout(timer.current), []);
+
+  return (index: number) => ({
+    onPointerEnter: (event: PointerEvent) => {
+      if (event.pointerType !== "mouse") return;
+      window.clearTimeout(timer.current);
+      timer.current = window.setTimeout(() => pick(index), HOVER_INTENT_MS);
+    },
+    onPointerLeave: () => window.clearTimeout(timer.current),
+  });
+}
+
+/**
+ * One property type per slide, like plates in an architect's portfolio: the drawing takes
+ * the stage, the name and a way into the listings sit beside it, and a rail underneath
+ * shows where you are. It moves on by itself while nobody is using it, and every slide
+ * stays mounted in the same grid cell so changing slides can't move the page.
+ */
 export function CategoriesSection() {
   const {
-    item: featuredType,
+    item: activeType,
+    index: activeIndex,
+    direction,
     auto,
-    show,
+    moved,
+    running,
+    canAutoplay,
+    paused,
+    setPaused,
+    showIndex,
+    step,
     containerRef,
     containerProps,
     holdProps,
   } = useIdleShowcase(PROPERTY_TYPE_ORDER);
 
-  const featuredProperty = PROPERTY_TYPES[featuredType];
+  const swipeProps = useSwipe(step);
+  const hoverPick = useHoverIntent(showIndex);
+  const railRef = useRef<HTMLOListElement>(null);
+  const total = PROPERTY_TYPE_ORDER.length;
+
+  /** Arrow keys, Home and End move along the rail, taking focus with them. */
+  const onRailKeyDown = (event: KeyboardEvent<HTMLOListElement>) => {
+    const keyTargets: Record<string, number> = {
+      ArrowRight: activeIndex + 1,
+      ArrowLeft: activeIndex - 1,
+      Home: 0,
+      End: total - 1,
+    };
+    const target = keyTargets[event.key];
+    if (target === undefined) return;
+    event.preventDefault();
+    const next = (target + total) % total;
+    const travel =
+      event.key === "ArrowRight"
+        ? 1
+        : event.key === "ArrowLeft"
+          ? -1
+          : undefined;
+    showIndex(next, travel);
+    railRef.current?.querySelectorAll("button")[next]?.focus();
+  };
 
   return (
     <section
-      className={cn("container-page", fullScreen, sectionSpacing)}
+      // Pieces of a drawing fly in from beyond its edges; clipping sideways keeps them from widening the page.
+      className={cn(
+        "container-page overflow-x-clip",
+        fullScreen,
+        sectionSpacing,
+      )}
       aria-labelledby="categories-title"
     >
       <SplitSectionIntro
@@ -550,88 +645,171 @@ export function CategoriesSection() {
       <div
         ref={containerRef}
         {...containerProps}
-        className="grid min-w-0 grid-cols-1 border-y border-border lg:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)]"
+        role="region"
+        aria-roledescription="carousel"
+        aria-label="Property types"
+        className="min-w-0"
+        style={{ "--slide-dir": direction } as CSSProperties}
       >
-        <div className="min-w-0 py-3 lg:py-6 lg:pr-10 xl:pr-14">
-          <nav aria-label="Browse property types">
-            <ul className="divide-y divide-border">
-              {PROPERTY_TYPE_ORDER.map((type) => {
-                const property = PROPERTY_TYPES[type];
-                const active = featuredType === type;
-
-                return (
-                  <li key={type}>
-                    <Link
-                      to={searchUrl({ types: [type] })}
-                      {...holdProps}
-                      onMouseEnter={() => show(type)}
-                      onFocus={() => show(type)}
-                      className="group flex min-w-0 items-center justify-between gap-5 py-5 sm:py-6"
-                    >
-                      <div className="min-w-0">
-                        <h3
-                          className={cn(
-                            "type-subsection transition-colors group-hover:text-primary",
-                            active && "lg:text-primary",
-                          )}
-                        >
-                          {property.plural}
-                        </h3>
-                        <p className="mt-1 max-w-sm text-body text-muted-foreground">
-                          {property.description}
-                        </p>
-                      </div>
-
-                      <ArrowUpRight
-                        className={cn(
-                          "size-4 shrink-0 text-muted-foreground transition-[color,translate] group-hover:text-primary",
-                          "motion-safe:group-hover:translate-x-0.5 motion-safe:group-hover:-translate-y-0.5",
-                          active && "lg:text-primary",
-                        )}
-                        aria-hidden="true"
-                      />
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          </nav>
-        </div>
-
-        <div className="hidden min-w-0 flex-col justify-between border-l border-border px-8 py-8 lg:flex xl:px-12 xl:py-10">
-          <div className="flex flex-1 items-center justify-center pb-10">
+        <div
+          {...swipeProps}
+          className="grid min-w-0 touch-pan-y grid-cols-1 items-center gap-6 sm:gap-8 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] lg:gap-14 xl:gap-20"
+        >
+          <div className="flex min-w-0 justify-center lg:justify-start">
             <PropertyTypeIllustration
-              type={featuredType}
+              type={activeType}
               gentle={auto}
-              className="w-full max-w-116"
+              direction={direction}
+              className="w-full max-w-136 lg:max-w-170"
             />
           </div>
 
-          <div className="border-t border-border pt-6">
-            <p className="text-caption font-semibold text-muted-foreground">
-              Currently exploring
-            </p>
-            {/* Keyed so idle changes fade in; a hover swaps the text straight away. */}
-            <div
-              key={featuredType}
-              className={cn(auto && "animate-in fade-in duration-300")}
-            >
-              <h3 className="mt-1.5 type-section-title">
-                {featuredProperty.plural}
-              </h3>
-              <p className="mt-2 max-w-sm text-body text-muted-foreground">
-                {featuredProperty.description}
-              </p>
-            </div>
-            <p className="mt-4">
-              <Link
-                to={searchUrl({ types: [featuredType] })}
-                {...holdProps}
-                className={textLink}
+          <div
+            {...holdProps}
+            aria-live={running ? "off" : "polite"}
+            className="grid min-w-0 grid-cols-1"
+          >
+            {PROPERTY_TYPE_ORDER.map((type, index) => {
+              const property = PROPERTY_TYPES[type];
+              const active = index === activeIndex;
+
+              return (
+                <div
+                  key={type}
+                  role="group"
+                  aria-roledescription="slide"
+                  aria-label={`${index + 1} of ${total}`}
+                  data-property-slide={type}
+                  data-active={active}
+                  inert={!active}
+                  className={cn(
+                    "min-w-0 [grid-area:1/1] [--slide-drift:0.75rem]",
+                    "transition-[opacity,visibility] duration-300 ease-soft",
+                    active ? "visible opacity-100" : "invisible opacity-0",
+                    active && auto && "delay-150 duration-500",
+                    active &&
+                      moved &&
+                      "animate-slide-drift [animation-delay:60ms]",
+                  )}
+                >
+                  <p className="font-display text-price tabular-nums sm:text-metric">
+                    {plateNumber(index + 1)}
+                    <span className="text-muted-foreground">
+                      {" "}
+                      / {plateNumber(total)}
+                    </span>
+                  </p>
+                  <h3 className="mt-4 type-page-title sm:mt-6">
+                    {property.plural}
+                  </h3>
+                  <p className="mt-3 max-w-sm text-lead text-muted-foreground">
+                    {property.description}
+                  </p>
+                  <Link
+                    to={searchUrl({ types: [type] })}
+                    className="group mt-6 inline-flex items-center gap-2 border-b border-ink/25 pb-1 text-body font-semibold transition-colors hover:border-primary hover:text-primary sm:mt-8"
+                  >
+                    Explore {property.plural.toLowerCase()}
+                    <ArrowUpRight
+                      className={cn(
+                        "size-4 shrink-0 transition-[color,translate]",
+                        "motion-safe:group-hover:translate-x-0.5 motion-safe:group-hover:-translate-y-0.5",
+                      )}
+                      aria-hidden="true"
+                    />
+                  </Link>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <div
+          {...holdProps}
+          className="mt-8 flex min-w-0 items-center gap-4 sm:gap-8 lg:mt-12"
+        >
+          <ol
+            ref={railRef}
+            aria-label="Choose a property type"
+            onKeyDown={onRailKeyDown}
+            className="grid min-w-0 flex-1 grid-cols-8 gap-1.5 sm:gap-2"
+          >
+            {PROPERTY_TYPE_ORDER.map((type, index) => {
+              const property = PROPERTY_TYPES[type];
+              const active = index === activeIndex;
+
+              return (
+                <li key={type} className="min-w-0">
+                  <button
+                    type="button"
+                    aria-label={property.plural}
+                    aria-current={active ? "true" : undefined}
+                    tabIndex={active ? 0 : -1}
+                    onClick={() => showIndex(index)}
+                    {...hoverPick(index)}
+                    className="group block w-full min-w-0 cursor-pointer py-3 text-left outline-none"
+                  >
+                    <span
+                      aria-hidden="true"
+                      className={cn(
+                        "block h-0.5 rounded-full transition-colors",
+                        "group-focus-visible:ring-3 group-focus-visible:ring-ring/40",
+                        active
+                          ? "bg-primary"
+                          : "bg-border group-hover:bg-ink/35",
+                      )}
+                    />
+                    <span
+                      aria-hidden="true"
+                      className={cn(
+                        "mt-3 hidden truncate text-caption transition-colors xl:block",
+                        active
+                          ? "font-semibold text-foreground"
+                          : "text-muted-foreground group-hover:text-foreground",
+                      )}
+                    >
+                      {property.plural}
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ol>
+
+          <div className="flex shrink-0 items-center gap-1">
+            {canAutoplay && (
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                aria-label={paused ? "Play slideshow" : "Pause slideshow"}
+                onClick={() => setPaused(!paused)}
+                className="text-muted-foreground"
               >
-                Explore places
-              </Link>
-            </p>
+                {paused ? (
+                  <Play aria-hidden="true" />
+                ) : (
+                  <Pause aria-hidden="true" />
+                )}
+              </Button>
+            )}
+            <Button
+              variant="outline"
+              size="icon"
+              aria-label="Previous property type"
+              onClick={() => step(-1)}
+              className="rounded-full"
+            >
+              <ChevronLeft aria-hidden="true" />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              aria-label="Next property type"
+              onClick={() => step(1)}
+              className="rounded-full"
+            >
+              <ChevronRight aria-hidden="true" />
+            </Button>
           </div>
         </div>
       </div>

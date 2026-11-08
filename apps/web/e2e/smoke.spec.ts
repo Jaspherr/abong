@@ -614,23 +614,20 @@ test("the sign-in and register cards are the same size", async ({ page }) => {
   expect(await cardBox("/register")).toEqual(await cardBox("/login"))
 })
 
-test("each property type on the homepage shows its own drawing", async ({ page, isMobile }) => {
-  test.skip(isMobile, "The drawing panel only shows from the lg breakpoint.")
+test("each property type on the homepage shows its own drawing", async ({ page }) => {
   await page.goto("/")
-  const nav = page.getByRole("navigation", { name: "Browse property types" })
-  const drawing = (type: string) => page.locator(`[data-property-illustration="${type}"]`)
+  const carousel = page.getByRole("region", { name: "Property types" })
+  const rail = carousel.getByRole("list", { name: "Choose a property type" })
+  const shown = page.locator('[data-property-illustration][data-active="true"]')
 
-  await expect(drawing("boarding-house")).toHaveCSS("opacity", "1")
-  await expect(drawing("house")).toHaveCSS("opacity", "0")
-
-  await nav.getByRole("link", { name: /^Houses/ }).hover()
-  await expect(drawing("house")).toHaveCSS("opacity", "1")
-  await expect(drawing("boarding-house")).toHaveCSS("opacity", "0")
-
-  // Keyboard users get the same preview.
-  await nav.getByRole("link", { name: /^Bedspaces/ }).focus()
-  await expect(drawing("bedspace")).toHaveCSS("opacity", "1")
-  await expect(drawing("house")).toHaveCSS("opacity", "0")
+  await expect(shown).toHaveCount(1)
+  await expect(shown).toHaveAttribute("data-property-illustration", "boarding-house")
+  for (const [name, type] of [["Houses", "house"], ["Bedspaces", "bedspace"], ["Condo units", "condominium"]]) {
+    await rail.getByRole("button", { name, exact: true }).click()
+    await expect(shown).toHaveCount(1)
+    await expect(shown).toHaveAttribute("data-property-illustration", type)
+    await expect(carousel.locator('[data-property-slide][data-active="true"] h3')).toHaveText(name)
+  }
 })
 
 test("hovering a listing card doesn't move it, and only the photo zooms", async ({ page, isMobile }) => {
@@ -661,55 +658,103 @@ test("hovering a listing card doesn't zoom the photo when reduced motion is on",
   await expect(card.locator("img").first()).toHaveCSS("scale", "none")
 })
 
-test.describe("property type drawings while idle", () => {
+test.describe("property type carousel", () => {
+  /** A little over one idle turn: the build, then time to take in the finished drawing. */
+  const IDLE_TURN = 6600
+  const ORDER = ["boarding-house", "bedspace", "room", "dormitory", "studio", "apartment", "condominium", "house"]
   const shownDrawing = (page: Page) => page.locator('[data-property-illustration][data-active="true"]').getAttribute("data-property-illustration")
+  const shownSlide = (page: Page) => page.locator('[data-property-slide][data-active="true"]').getAttribute("data-property-slide")
+  const carousel = (page: Page) => page.getByRole("region", { name: "Property types" })
 
   const openSection = async (page: Page) => {
     await page.clock.install()
     await page.goto("/")
     await page.getByRole("heading", { name: "Find the space that fits you." }).scrollIntoViewIfNeeded()
+    await carousel(page).scrollIntoViewIfNeeded()
     await page.mouse.move(0, 0)
     // The on-screen check runs on real time, not the fake clock, so give it a moment.
     await page.waitForTimeout(300)
   }
 
-  test.beforeEach(({ isMobile }) => {
-    test.skip(isMobile, "The drawing panel only shows from the lg breakpoint.")
-  })
-
-  test("cycles through every type in random order without repeating one", async ({ page }) => {
+  test("cycles through every type in order, drawing and text together", async ({ page }) => {
     await openSection(page)
     const seen = [await shownDrawing(page)]
-    for (let tick = 0; tick < 16; tick++) {
-      await page.clock.runFor(4600)
+    for (let tick = 0; tick < ORDER.length; tick++) {
+      await page.clock.runFor(IDLE_TURN)
       await expect.poll(() => shownDrawing(page)).not.toBe(seen.at(-1))
+      expect(await shownSlide(page)).toBe(await shownDrawing(page))
       seen.push(await shownDrawing(page))
     }
-    expect(new Set(seen).size).toBe(8)
+    expect(seen).toEqual([...ORDER, ORDER[0]])
   })
 
-  test("a hover holds its drawing, then the cycle resumes after a short delay", async ({ page }) => {
+  test("each slide's explore link goes to that type's results", async ({ page }) => {
     await openSection(page)
-    const row = page.getByRole("navigation", { name: "Browse property types" }).getByRole("link", { name: /^Houses/ })
+    for (const type of ORDER) {
+      await expect.poll(() => shownSlide(page)).toBe(type)
+      // Hidden slides are inert, so only the showing one's link is reachable.
+      const link = carousel(page).getByRole("link", { name: /^Explore / })
+      await expect(link).toHaveCount(1)
+      expect(await link.getAttribute("href")).toBe(`/search?types=${type}`)
+      await carousel(page).getByRole("button", { name: "Next property type" }).click()
+    }
+    await carousel(page).getByRole("link", { name: "Explore boarding houses" }).click()
+    await expect(page).toHaveURL(/\/search\?types=boarding-house$/)
+  })
 
-    await row.hover()
-    await expect.poll(() => shownDrawing(page)).toBe("house")
-    await page.clock.runFor(20_000)
-    expect(await shownDrawing(page)).toBe("house")
+  test("previous and next wrap around, and the rail jumps straight to a type", async ({ page }) => {
+    await openSection(page)
+    await carousel(page).getByRole("button", { name: "Previous property type" }).click()
+    await expect.poll(() => shownSlide(page)).toBe("house")
+    await carousel(page).getByRole("button", { name: "Next property type" }).click()
+    await expect.poll(() => shownSlide(page)).toBe("boarding-house")
 
+    const rail = carousel(page).getByRole("list", { name: "Choose a property type" })
+    await rail.getByRole("button", { name: "Studio units" }).click()
+    await expect.poll(() => shownSlide(page)).toBe("studio")
+    await expect(rail.getByRole("button", { name: "Studio units" })).toHaveAttribute("aria-current", "true")
+    expect(await shownDrawing(page)).toBe("studio")
+  })
+
+  test("arrow keys, Home and End move along the rail with focus", async ({ page }) => {
+    await openSection(page)
+    const rail = carousel(page).getByRole("list", { name: "Choose a property type" })
+    await rail.getByRole("button", { name: "Boarding houses" }).focus()
+    await page.keyboard.press("ArrowRight")
+    await expect.poll(() => shownSlide(page)).toBe("bedspace")
+    await expect(rail.getByRole("button", { name: "Bedspaces" })).toBeFocused()
+    await page.keyboard.press("ArrowLeft")
+    await page.keyboard.press("ArrowLeft")
+    await expect.poll(() => shownSlide(page)).toBe("house")
+    await page.keyboard.press("Home")
+    await expect.poll(() => shownSlide(page)).toBe("boarding-house")
+    await page.keyboard.press("End")
+    await expect.poll(() => shownSlide(page)).toBe("house")
+    await expect(rail.getByRole("button", { name: "Houses", exact: true })).toBeFocused()
+  })
+
+  test("keyboard focus holds the slide for as long as it stays in the carousel", async ({ page }) => {
+    await openSection(page)
+    await carousel(page).getByRole("button", { name: "Next property type" }).focus()
+    const first = await shownSlide(page)
+    await page.clock.runFor(30_000)
+    expect(await shownSlide(page)).toBe(first)
+  })
+
+  test("the pause button stops the cycle and play starts it again", async ({ page }) => {
+    await openSection(page)
+    await carousel(page).getByRole("button", { name: "Pause slideshow" }).click()
+    // Clicking also focuses the button, so let go of it to prove the pause holds by itself.
+    await carousel(page).getByRole("button", { name: "Play slideshow" }).blur()
     await page.mouse.move(0, 0)
-    await page.clock.runFor(1000)
-    expect(await shownDrawing(page)).toBe("house")
-    await page.clock.runFor(1500)
-    await expect.poll(() => shownDrawing(page)).not.toBe("house")
-  })
+    await page.clock.runFor(30_000)
+    expect(await shownSlide(page)).toBe("boarding-house")
 
-  test("keyboard focus holds its drawing for as long as it stays in the section", async ({ page }) => {
-    await openSection(page)
-    await page.getByRole("navigation", { name: "Browse property types" }).getByRole("link", { name: /^Rooms/ }).focus()
-    await expect.poll(() => shownDrawing(page)).toBe("room")
-    await page.clock.runFor(20_000)
-    expect(await shownDrawing(page)).toBe("room")
+    await carousel(page).getByRole("button", { name: "Play slideshow" }).click()
+    await carousel(page).getByRole("button", { name: "Pause slideshow" }).blur()
+    await page.mouse.move(0, 0)
+    await page.clock.runFor(IDLE_TURN)
+    await expect.poll(() => shownSlide(page)).toBe("bedspace")
   })
 
   test("uses the latest on-screen update when several arrive together", async ({ page }) => {
@@ -728,34 +773,19 @@ test.describe("property type drawings while idle", () => {
     await openSection(page)
     await page.clock.runFor(100)
     const first = await shownDrawing(page)
-    await page.clock.runFor(4600)
+    await page.clock.runFor(IDLE_TURN)
     await expect.poll(() => shownDrawing(page)).not.toBe(first)
   })
 
-  test("a mouse resting on the drawing doesn't stop the cycle", async ({ page }) => {
-    await openSection(page)
-    const box = await page.locator('[data-property-illustration][data-active="true"]').boundingBox()
-    await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2)
-    const first = await shownDrawing(page)
-    await page.clock.runFor(4600)
-    await expect.poll(() => shownDrawing(page)).not.toBe(first)
-  })
-
-  test("hovering the explore link keeps its destination", async ({ page }) => {
-    await openSection(page)
-    const link = page.getByRole("link", { name: "Explore places" })
-    await link.hover()
-    const destination = await link.getAttribute("href")
-    await page.clock.runFor(20_000)
-    expect(await link.getAttribute("href")).toBe(destination)
-  })
-
-  test("stays still when reduced motion is on", async ({ page }) => {
+  test("stays still, with no pause button, when reduced motion is on", async ({ page }) => {
     await page.emulateMedia({ reducedMotion: "reduce" })
     await openSection(page)
-    const first = await shownDrawing(page)
+    await expect(carousel(page).getByRole("button", { name: "Pause slideshow" })).toHaveCount(0)
+    // No line-by-line build: the original drawing shows as is.
+    await expect(page.locator("[data-drawing-layer]")).toHaveCount(0)
+    await expect(page.locator('[data-property-illustration][data-active="true"] [data-drawing-source]')).toHaveCSS("visibility", "visible")
     await page.clock.runFor(30_000)
-    expect(await shownDrawing(page)).toBe(first)
+    expect(await shownDrawing(page)).toBe("boarding-house")
   })
 
   test("doesn't run while scrolled out of view", async ({ page }) => {
@@ -765,6 +795,142 @@ test.describe("property type drawings while idle", () => {
     await page.locator('[data-property-illustration][data-active="true"]').waitFor({ state: "attached" })
     await page.clock.runFor(30_000)
     expect(await shownDrawing(page)).toBe("boarding-house")
+  })
+
+  test.describe("line-by-line drawings", () => {
+    const active = (page: Page) => page.locator('[data-property-illustration][data-active="true"]')
+    /** Visible copies in each drawing, and whether its original is showing. */
+    const drawings = (page: Page) =>
+      page.evaluate(`[...document.querySelectorAll("[data-property-illustration]")].map((svg) => ({
+        type: svg.dataset.propertyIllustration,
+        original: getComputedStyle(svg.querySelector("[data-drawing-source]")).visibility === "visible",
+        copies: [...svg.querySelectorAll("[data-drawing-layer] :not(g)")].filter((piece) => getComputedStyle(piece).opacity !== "0" && getComputedStyle(piece).visibility === "visible").length,
+      }))`) as Promise<{ type: string; original: boolean; copies: number }[]>
+
+    const openPaused = async (page: Page) => {
+      await page.goto("/")
+      await carousel(page).scrollIntoViewIfNeeded()
+      // Pausing keeps the idle cycle out of the way; the build itself runs on real time.
+      await carousel(page).getByRole("button", { name: "Pause slideshow" }).click()
+    }
+
+    test("builds the drawing from separate lines, then shows the original", async ({ page }) => {
+      await openPaused(page)
+      await carousel(page).getByRole("button", { name: "Dormitories" }).click()
+      // Mid-build: the original is hidden and the drawing exists as many separate lines.
+      await expect.poll(async () => (await drawings(page)).find((d) => d.type === "dormitory")).toMatchObject({ original: false })
+      expect(await active(page).locator("[data-drawing-layer] :not(g)").count()).toBeGreaterThan(100)
+
+      // Settled: the original drawing is what's showing, and nothing else is.
+      await expect.poll(() => drawings(page), { timeout: 6000 }).toEqual(
+        ORDER.map((type) => ({ type, original: type === "dormitory", copies: 0 })),
+      )
+    })
+
+    test("rapid changes never leave more than the last drawing behind", async ({ page }) => {
+      await openPaused(page)
+      const next = carousel(page).getByRole("button", { name: "Next property type" })
+      for (let i = 0; i < 7; i++) await next.click({ delay: 20 })
+      await expect.poll(() => shownSlide(page)).toBe("house")
+      await expect.poll(() => drawings(page), { timeout: 6000 }).toEqual(
+        ORDER.map((type) => ({ type, original: type === "house", copies: 0 })),
+      )
+    })
+  })
+
+  test.describe("with a mouse", () => {
+    test.beforeEach(({ isMobile }) => {
+      test.skip(isMobile, "Hover needs a mouse.")
+    })
+
+    test("hovering the text holds its slide, then the cycle resumes after a short delay", async ({ page }) => {
+      await openSection(page)
+      await carousel(page).getByRole("heading", { name: "Boarding houses" }).hover()
+      await page.clock.runFor(20_000)
+      expect(await shownSlide(page)).toBe("boarding-house")
+
+      await page.mouse.move(0, 0)
+      await page.clock.runFor(1000)
+      expect(await shownSlide(page)).toBe("boarding-house")
+      await page.clock.runFor(1500)
+      await expect.poll(() => shownSlide(page)).toBe("bedspace")
+    })
+
+    test("a clicked type gets a full turn, then the cycle moves on", async ({ page }) => {
+      await openSection(page)
+      // A click also focuses the button; only keyboard focus should hold the cycle.
+      await carousel(page).getByRole("list", { name: "Choose a property type" }).getByRole("button", { name: "Studio units" }).click()
+      await page.mouse.move(0, 0)
+      // Leaving the rail doesn't cut it short to the 2s resume.
+      await page.clock.runFor(6000)
+      expect(await shownSlide(page)).toBe("studio")
+      await page.clock.runFor(600)
+      await expect.poll(() => shownSlide(page)).toBe("apartment")
+
+      await carousel(page).getByRole("button", { name: "Next property type" }).click()
+      await page.mouse.move(0, 0)
+      await expect.poll(() => shownSlide(page)).toBe("condominium")
+      await page.clock.runFor(IDLE_TURN)
+      await expect.poll(() => shownSlide(page)).toBe("house")
+    })
+
+    test("resting on a rail segment picks its type, passing over it doesn't", async ({ page }) => {
+      await openSection(page)
+      const rail = carousel(page).getByRole("list", { name: "Choose a property type" })
+      await rail.getByRole("button", { name: "Rooms" }).hover()
+      await page.clock.runFor(60)
+      await rail.getByRole("button", { name: "Studio units" }).hover()
+      await page.clock.runFor(200)
+      await expect.poll(() => shownSlide(page)).toBe("studio")
+    })
+
+    test("a mouse resting on the drawing doesn't stop the cycle", async ({ page }) => {
+      await openSection(page)
+      const box = await page.locator('[data-property-illustration][data-active="true"]').boundingBox()
+      await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2)
+      const first = await shownDrawing(page)
+      await page.clock.runFor(IDLE_TURN)
+      await expect.poll(() => shownDrawing(page)).not.toBe(first)
+    })
+  })
+
+  test.describe("on a phone", () => {
+    test.beforeEach(({ isMobile }) => {
+      test.skip(!isMobile, "Swiping is a touch gesture.")
+    })
+
+    const swipe = async (page: Page, dx: number) => {
+      const stage = page.locator('[data-property-illustration][data-active="true"]')
+      const box = (await stage.boundingBox())!
+      const x = box.x + box.width / 2
+      const y = box.y + box.height / 2
+      const init = { pointerType: "touch", pointerId: 7, isPrimary: true, bubbles: true }
+      await stage.dispatchEvent("pointerdown", { ...init, clientX: x, clientY: y })
+      await stage.dispatchEvent("pointerup", { ...init, clientX: x + dx, clientY: y + 4 })
+    }
+
+    test("swiping left and right moves between types", async ({ page }) => {
+      await openSection(page)
+      await swipe(page, -120)
+      await expect.poll(() => shownSlide(page)).toBe("bedspace")
+      await swipe(page, 120)
+      await expect.poll(() => shownSlide(page)).toBe("boarding-house")
+      await swipe(page, 120)
+      await expect.poll(() => shownSlide(page)).toBe("house")
+      // A short drag is a tap or a scroll, not a swipe.
+      await swipe(page, -20)
+      expect(await shownSlide(page)).toBe("house")
+    })
+
+    test("a swiped-to type gets a full turn before the cycle moves on", async ({ page }) => {
+      await openSection(page)
+      await swipe(page, -120)
+      await expect.poll(() => shownSlide(page)).toBe("bedspace")
+      await page.clock.runFor(6000)
+      expect(await shownSlide(page)).toBe("bedspace")
+      await page.clock.runFor(600)
+      await expect.poll(() => shownSlide(page)).toBe("room")
+    })
   })
 })
 

@@ -1,12 +1,15 @@
-import type { ComponentType, ReactNode } from "react";
+import { useEffect, useRef, type ComponentType, type ReactNode } from "react";
+import { useMediaQuery } from "@/hooks/use-media-query";
 import { PROPERTY_TYPE_ORDER } from "@/constants/listing";
 import { cn } from "@/lib/utils";
 import type { PropertyType } from "@/types";
+import { AssemblyStage } from "./line-assembly";
+import type { ShowcaseDirection } from "./use-idle-showcase";
 
 /** Thin secondary lines: glazing, slats and other detail that sits behind the main drawing. */
 function Fine({ children }: { children: ReactNode }) {
   return (
-    <g strokeWidth="0.7" strokeOpacity="0.45">
+    <g strokeWidth="0.7" opacity="0.45">
       {children}
     </g>
   );
@@ -496,7 +499,7 @@ function House() {
       <Ground />
 
       {/* Fine architectural details */}
-      <g strokeWidth="0.7" strokeOpacity="0.4">
+      <g strokeWidth="0.7" opacity="0.4">
         <path d="M137 121V173M210 121V173" />
         <path d="M241 121V173M314 121V173" />
         <path d="M137 218V266M210 218V266" />
@@ -521,25 +524,56 @@ const ILLUSTRATIONS: Record<PropertyType, ComponentType> = {
 };
 
 /**
- * Line drawing of the chosen property type. Every drawing stays mounted in one grid
- * cell and only its opacity changes, so the panel can't resize and quick hovering
- * across the list reverses smoothly instead of restarting.
+ * Line drawing of the chosen property type. Every drawing stays mounted in one grid cell,
+ * so the panel can't resize between types.
  *
- * `gentle` is for changes nobody asked for: the old drawing clears first and the new
- * one fades in slowly, so the two sets of lines barely overlap. Without it the change
- * answers a hover straight away.
+ * With motion allowed, each drawing is built line by line: the pieces gather from all
+ * around and lock into place, and the previous drawing comes apart as the next one forms
+ * (see `line-assembly.ts`). The pieces live in a layer React never renders into, so a
+ * build costs no renders. `direction` (1 forward, -1 back) sets which side the new pieces
+ * gather from and the old ones leave toward.
+ *
+ * With reduced motion, the original drawings simply swap, and `gentle` softens changes
+ * nobody asked for.
  */
 export function PropertyTypeIllustration({
   type,
   gentle,
+  direction = 1,
   className,
 }: {
   type: PropertyType;
   gentle?: boolean;
+  direction?: ShowcaseDirection;
   className?: string;
 }) {
+  const reducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
+  const animated = !reducedMotion;
+  const rootRef = useRef<HTMLDivElement>(null);
+  const stageRef = useRef<AssemblyStage | null>(null);
+
+  useEffect(() => {
+    if (!animated || !rootRef.current) return;
+    const stage = new AssemblyStage(rootRef.current);
+    stageRef.current = stage;
+    return () => {
+      stage.destroy();
+      stageRef.current = null;
+    };
+  }, [animated]);
+
+  // Declared after the stage's effect, so on mount the stage exists by the time this runs.
+  useEffect(() => {
+    stageRef.current?.show(type, direction);
+  }, [animated, type, direction]);
+
   return (
-    <div className={cn("grid text-foreground/60", className)} aria-hidden="true">
+    <div
+      ref={rootRef}
+      data-assembly={animated ? "lines" : "static"}
+      className={cn("grid text-foreground", className)}
+      aria-hidden="true"
+    >
       {PROPERTY_TYPE_ORDER.map((option) => {
         const Illustration = ILLUSTRATIONS[option];
         const active = option === type;
@@ -553,19 +587,27 @@ export function PropertyTypeIllustration({
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
             className={cn(
-              "h-auto w-full [grid-area:1/1]",
-              "transition-opacity duration-300 ease-soft",
-              active ? "opacity-100" : "opacity-0",
-              active && gentle && "delay-200 duration-700",
+              "h-auto w-full overflow-visible [grid-area:1/1]",
+              !animated && [
+                "transition-opacity duration-300 ease-soft",
+                active ? "opacity-100" : "opacity-0",
+                active && gentle && "delay-200 duration-700",
+              ],
             )}
           >
+            {/* One opacity for the whole drawing, so lines that cross or meet don't darken where they overlap. */}
             <g
               stroke="currentColor"
               strokeWidth="1.25"
               strokeLinecap="round"
               strokeLinejoin="round"
+              opacity="0.6"
             >
-              <Illustration />
+              {/* The original drawing: shown as is without motion, and the blueprint the pieces are cut from. */}
+              <g data-drawing-source="" visibility={animated ? "hidden" : undefined}>
+                <Illustration />
+              </g>
+              {animated && <g data-drawing-layer="" />}
             </g>
           </svg>
         );
