@@ -5,7 +5,7 @@ import { toast } from "sonner"
 import { PageHeader } from "@/components/common/page-header"
 import { Photo } from "@/components/common/photo"
 import { MetaBadge } from "@/components/common/status-badge"
-import { UserAvatar } from "@/components/common/user-avatar"
+import { PersonAvatar } from "@/features/profile/person-avatar"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { PATHS } from "@/constants/app"
@@ -143,7 +143,7 @@ function LandlordDashboardPage() {
                 {unread.map((t) => (
                   <TodoRow
                     key={t.id}
-                    lead={<UserAvatar name={t.renter.name} className="size-10" />}
+                    lead={<PersonAvatar userId={t.renter.id} name={t.renter.name} className="size-10" />}
                     title={`${t.renter.name} asked about ${t.listing.name}`}
                     detail={t.messages.at(-1)?.body}
                     actions={
@@ -320,7 +320,7 @@ function LandlordDashboardPage() {
                 {read.slice(0, 4).map((t) => (
                   <li key={t.id}>
                     <Link to={`${PATHS.landlord.inquiries}?thread=${t.id}`} className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/40">
-                      <UserAvatar name={t.renter.name} />
+                      <PersonAvatar userId={t.renter.id} name={t.renter.name} />
                       <div className="min-w-0 flex-1">
                         <p className="flex items-baseline justify-between gap-2">
                           <span className="truncate text-sm font-medium">{t.renter.name}</span>

@@ -114,6 +114,8 @@ export const AUDIT_AREAS: Record<AuditArea, string> = {
   verification: "Verifications",
   report: "Reports",
   account: "Accounts",
+  review: "Reviews",
+  rental: "Rentals",
 }
 
 export const REPORT_STATUS: Record<ReportStatus, StatusMeta> = {

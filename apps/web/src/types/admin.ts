@@ -71,7 +71,7 @@ export interface ActivityEvent {
 export type ModerationAction = "approve" | "reject" | "suspend" | "request-changes" | "archive"
 
 /** What an admin decision was about. */
-export type AuditArea = "listing" | "verification" | "report" | "account"
+export type AuditArea = "listing" | "verification" | "report" | "account" | "review" | "rental"
 
 /**
  * One admin decision, kept for accountability. Written by the service that made the

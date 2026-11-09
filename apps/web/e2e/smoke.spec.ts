@@ -1060,7 +1060,7 @@ test("each role sees its own links before the profile icon, and switching update
   const header = page.getByRole("banner")
   const avatar = header.getByRole("button", { name: /Demo menu for/ })
   const viewings = header.getByRole("navigation", { name: "Your rentals" }).getByRole("link", { name: /Viewings/ })
-  await expectAccountNav(page, "Your rentals", ["Saved", "Inquiries", "Viewings"])
+  await expectAccountNav(page, "Your rentals", ["Overview", "Saved", "Inquiries", "Viewings"])
   // Retried because the header is right-aligned: badges loading in shift it between measurements.
   await expect(async () => {
     const avatarBox = (await avatar.boundingBox())!
@@ -1073,10 +1073,10 @@ test("each role sees its own links before the profile icon, and switching update
   await page.getByRole("menuitem", { name: "Switch demo role" }).click()
   await page.getByRole("menuitem", { name: "Landlord" }).click()
   await expect(page).toHaveURL(/\/landlord\/dashboard/)
-  await expectAccountNav(page, "Your properties", ["Dashboard", "Properties", "Listings", "Inquiries", "Viewings"])
+  await expectAccountNav(page, "Your properties", ["Dashboard", "Properties", "Listings", "Inquiries", "Viewings", "Renters"])
 
   await page.goto("/search")
-  await expectAccountNav(page, "Your properties", ["Dashboard", "Properties", "Listings", "Inquiries", "Viewings"])
+  await expectAccountNav(page, "Your properties", ["Dashboard", "Properties", "Listings", "Inquiries", "Viewings", "Renters"])
   await expect(header.getByRole("navigation", { name: "Your rentals" })).toHaveCount(0)
 
   await header.getByRole("button", { name: /Demo menu for/ }).click()
@@ -1091,7 +1091,7 @@ test("each role sees its own links before the profile icon, and switching update
 test("the header keeps every link on one line at the narrowest desktop width", async ({ page, isMobile }) => {
   test.skip(isMobile, "The desktop bar only shows at 1024px and up.")
   await page.setViewportSize({ width: 1024, height: 700 })
-  for (const [role, nav, count] of [["renter", "Your rentals", 3], ["landlord", "Your properties", 5], ["admin", "Admin", 5]] as const) {
+  for (const [role, nav, count] of [["renter", "Your rentals", 4], ["landlord", "Your properties", 6], ["admin", "Admin", 5]] as const) {
     await signInAs(page, role)
     await page.goto("/search")
     const header = page.getByRole("banner")
@@ -1204,4 +1204,160 @@ test("renter can compare saved places side by side", async ({ page }) => {
   // so no "Lowest" mark may appear.
   await expect(table.getByRole("rowheader", { name: "Monthly rent" })).toBeVisible()
   await expect(table.getByText("Lowest")).toHaveCount(0)
+})
+
+test.describe("profile photos", () => {
+  test("a renter adds, positions and removes a photo, and non-images are refused", async ({ page }) => {
+    await signInAs(page, "renter")
+    await page.goto("/profile")
+    const picker = page.locator('input[type="file"]')
+
+    await picker.setInputFiles({ name: "photo.png", mimeType: "image/png", buffer: Buffer.from("<svg onload=alert(1)>") })
+    await expect(page.getByText("Choose a JPEG, PNG or WebP photo.")).toBeVisible()
+
+    await picker.setInputFiles("public/photos/bed-01.webp")
+    await page.getByRole("group", { name: "Photo position" }).press("ArrowRight")
+    await page.getByRole("button", { name: "Zoom in" }).click()
+    await page.getByRole("button", { name: "Save photo" }).click()
+    await expect(page.getByText("Photo saved")).toBeVisible()
+    await expect(page.locator('header img[src^="data:image/"]')).toHaveCount(1)
+    // Renter photos default to landlords they're in touch with, and can't be made public.
+    await expect(page.getByRole("radio", { name: /Landlords you're in touch with/ })).toBeChecked()
+    await expect(page.getByRole("radio", { name: /Everyone/ })).toHaveCount(0)
+
+    await page.getByRole("button", { name: "Remove", exact: true }).click()
+    await expect(page.getByRole("button", { name: "Add photo" })).toBeVisible()
+    await expect(page.locator('header img[src^="data:image/"]')).toHaveCount(0)
+  })
+
+  test("a landlord's photo is public by default and can be limited to contacts", async ({ page }) => {
+    await signInAs(page, "landlord")
+    await page.goto("/landlord/profile")
+    await page.locator('input[type="file"]').setInputFiles("public/photos/bed-02.webp")
+    await page.getByRole("button", { name: "Save photo" }).click()
+    await expect(page.getByText("Photo saved")).toBeVisible()
+    await expect(page.getByRole("radio", { name: /Everyone/ })).toBeChecked()
+
+    await page.getByRole("link", { name: "View public page" }).click()
+    await expect(page.locator('main img[src^="data:image/"]').first()).toBeVisible()
+
+    await page.goto("/landlord/profile")
+    await page.getByRole("radio", { name: /Renters you're in touch with/ }).click()
+    await expect(page.getByText("Photo visibility saved")).toBeVisible()
+  })
+})
+
+test.describe("rentals and reviews", () => {
+  test("a renter reviews a completed viewing from the overview, once", async ({ page }) => {
+    await signInAs(page, "renter")
+    await page.goto("/overview")
+    await expect(page.getByRole("heading", { name: "Your home" })).toBeVisible()
+    // The stay is 12 days old: no review yet, and the page says when.
+    await expect(page.getByText(/You can review this stay from/)).toBeVisible()
+
+    await page.getByRole("button", { name: "Review the viewing" }).click()
+    const dialog = page.getByRole("dialog")
+    await dialog.getByRole("button", { name: "Publish review" }).click()
+    await expect(dialog.getByText("Choose an overall rating.")).toBeVisible()
+    // Viewing reviews don't offer maintenance: that's for people who lived there.
+    await expect(dialog.getByText("Maintenance and support")).toHaveCount(0)
+    await dialog.getByRole("group", { name: "Overall viewing experience" }).getByRole("radio", { name: /^4 stars/ }).locator("xpath=..").click()
+    await dialog.getByLabel(/Your review/).fill("On time, and every room matched the photos in the listing.")
+    await dialog.getByRole("button", { name: "Publish review" }).click()
+    await expect(page.getByText("Review published")).toBeVisible()
+    await expect(page.getByRole("button", { name: "Review the viewing" })).toHaveCount(0)
+    await expect(page.getByRole("heading", { name: "Your reviews" })).toBeVisible()
+
+    await page.goto("/listing/ferrer-compound")
+    await expect(page.getByText("On time, and every room matched the photos in the listing.")).toBeVisible()
+    await expect(page.getByText("Verified viewing").first()).toBeVisible()
+  })
+
+  test("a stay needs the other side to confirm it", async ({ page }) => {
+    await signInAs(page, "landlord")
+    await page.goto("/landlord/renters")
+    const pending = page.getByRole("article", { name: /Santos Residence Tapuac, Waiting for confirmation/ })
+    await expect(pending.getByText("Janelle Ocampo recorded this stay. Confirm it if it's right.")).toBeVisible()
+    await pending.getByRole("button", { name: "Confirm stay" }).click()
+    await expect(page.getByText("Answer saved")).toBeVisible()
+    await expect(page.getByRole("heading", { name: "Living at your places" })).toBeVisible()
+
+    // The renter side: a place whose landlord replied can be added, and waits for the landlord.
+    await signInAs(page, "renter")
+    await page.goto("/overview")
+    await page.getByRole("button", { name: "Add a place you live" }).click()
+    const dialog = page.getByRole("dialog")
+    await dialog.getByRole("combobox", { name: "Place" }).click()
+    await page.getByRole("option", { name: /Santos Annex/ }).click()
+    await dialog.getByLabel("Move-in date").fill("2026-11-01")
+    await dialog.getByRole("button", { name: "Send for confirmation" }).click()
+    await expect(page.getByText("Stay recorded")).toBeVisible()
+    await expect(page.getByText("Waiting for Teresita Santos to confirm.")).toBeVisible()
+    await expect(page.getByRole("button", { name: "Confirm stay" })).toHaveCount(0)
+  })
+
+  test("landlords reply to reviews but can't remove them, and new landlords show no score", async ({ page }) => {
+    await signInAs(page, "landlord")
+    await page.goto("/landlord/reviews")
+    await expect(page.getByText("Resident reviews").first()).toBeVisible()
+    const review = page.getByRole("article", { name: "Review by Kristine A." }).filter({ hasText: "Verified stay" })
+    await review.getByRole("button", { name: "Reply publicly" }).click()
+    await review.getByLabel("Your public reply").fill("Thank you, Kristine. Good luck with your boards!")
+    await review.getByRole("button", { name: "Post reply" }).click()
+    await expect(page.getByText("Reply posted")).toBeVisible()
+    await expect(page.getByRole("button", { name: /Delete|Hide/ })).toHaveCount(0)
+
+    await page.goto("/landlord/l9")
+    await expect(page.getByText(/No reviews yet/)).toBeVisible()
+    await expect(page.getByText("Not enough recent inquiries to measure replies yet.")).toBeVisible()
+  })
+
+  test("a disputed stay is held until an admin decides, and the decision is logged", async ({ page }) => {
+    await signInAs(page, "renter")
+    await page.goto("/overview")
+    await page.getByRole("button", { name: "Report a problem" }).click()
+    await page.getByLabel("What's wrong?").fill("I moved in a week later than this date says.")
+    await page.getByRole("button", { name: "Send to Abong" }).click()
+    await expect(page.getByText("Problem reported")).toBeVisible()
+    await expect(page.getByText("A problem was reported with this stay. Abong is looking into it.")).toBeVisible()
+
+    await signInAs(page, "admin")
+    await page.goto("/admin/reviews")
+    await expect(page.getByText("I moved in a week later than this date says.")).toBeVisible()
+    await page.getByRole("button", { name: "Keep the stay" }).click()
+    await expect(page.getByText("Add a note of at least 10 characters.")).toBeVisible()
+    await page.getByLabel("Decision note").fill("Dates confirmed with both sides by message.")
+    await page.getByRole("button", { name: "Keep the stay" }).click()
+    await expect(page.getByText("Stay kept")).toBeVisible()
+    await expect(page.getByText("No disputed stays")).toBeVisible()
+
+    await page.goto("/admin/audit")
+    await expect(page.getByText("Kept disputed stay").first()).toBeVisible()
+  })
+
+  test("listing pages show measured reply figures, not typed-in ones", async ({ page }) => {
+    await page.goto("/listing/santos-boarding-house")
+    await expect(page.getByText(/inquiries in the last 90 days/)).toBeVisible()
+    await expect(page.getByRole("heading", { name: "Reviews of this place" })).toBeVisible()
+  })
+})
+
+test("deleting a review doesn't reopen the stay or viewing for a new one", async ({ page }) => {
+  await signInAs(page, "renter")
+  await page.goto("/overview")
+  await page.getByRole("button", { name: "Review the viewing" }).click()
+  const dialog = page.getByRole("dialog")
+  await dialog.getByRole("group", { name: "Overall viewing experience" }).getByRole("radio", { name: /^2 stars/ }).locator("xpath=..").click()
+  await dialog.getByRole("button", { name: "Publish review" }).click()
+  await expect(page.getByText("Review published")).toBeVisible()
+
+  await page.getByRole("button", { name: "Remove", exact: true }).click()
+  await page.getByRole("button", { name: "Remove review" }).click()
+  await expect(page.getByText("Review removed")).toBeVisible()
+  await expect(page.getByRole("heading", { name: "Your reviews" })).toHaveCount(0)
+  await expect(page.getByRole("button", { name: "Review the viewing" })).toHaveCount(0)
+
+  await page.goto("/viewings")
+  await page.getByRole("button", { name: /History/ }).click()
+  await expect(page.getByRole("button", { name: "Review the viewing" })).toHaveCount(0)
 })

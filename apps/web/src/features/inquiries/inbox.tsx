@@ -18,7 +18,7 @@ import { toast } from "sonner"
 
 import { Photo } from "@/components/common/photo"
 import { StatusBadge } from "@/components/common/status-badge"
-import { UserAvatar } from "@/components/common/user-avatar"
+import { PersonAvatar } from "@/features/profile/person-avatar"
 import { EmptyState } from "@/components/feedback/states"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -45,6 +45,9 @@ const SIMULATED_REPLIES = [
 
 const counterpart = (thread: InquiryThread, perspective: Perspective) =>
   perspective === "renter" ? thread.landlord.name : thread.renter.name
+
+const counterpartId = (thread: InquiryThread, perspective: Perspective) =>
+  perspective === "renter" ? thread.landlord.userId : thread.renter.id
 
 const unread = (thread: InquiryThread, perspective: Perspective) =>
   perspective === "renter"
@@ -288,7 +291,8 @@ function ThreadList({
                     )}
                   >
                     <div className="shrink-0 pt-0.5">
-                      <UserAvatar
+                      <PersonAvatar
+                        userId={counterpartId(thread, perspective)}
                         name={counterpart(thread, perspective)}
                       />
                     </div>
@@ -467,6 +471,7 @@ function Conversation({
               thread.id,
               thread.landlord.userId,
               reply,
+              { automated: true },
             )
 
             await inquiriesService.markRead(
@@ -548,7 +553,7 @@ function Conversation({
           </Button>
 
           <div className="shrink-0">
-            <UserAvatar name={name} />
+            <PersonAvatar userId={counterpartId(thread, perspective)} name={name} />
           </div>
 
           {/* Contact identity */}

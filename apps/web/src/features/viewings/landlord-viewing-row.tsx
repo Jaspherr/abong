@@ -2,7 +2,7 @@ import { StickyNote } from "lucide-react"
 import { Link } from "react-router"
 import { Photo } from "@/components/common/photo"
 import { MetaBadge } from "@/components/common/status-badge"
-import { UserAvatar } from "@/components/common/user-avatar"
+import { PersonAvatar } from "@/features/profile/person-avatar"
 import { PATHS } from "@/constants/app"
 import { VIEWING_STATUS } from "@/constants/status"
 import { formatTime } from "@/lib/format"
@@ -17,7 +17,7 @@ export function LandlordViewingRow({ viewing: v }: { viewing: ViewingWithContext
 
       <div className="min-w-0 space-y-2">
         <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
-          <UserAvatar name={v.renter.name} className="size-7 text-caption" />
+          <PersonAvatar userId={v.renter.id} name={v.renter.name} className="size-7 text-caption" />
           <h3 className="font-sans text-body font-semibold">{v.renter.name}</h3>
           <MetaBadge meta={VIEWING_STATUS[v.status]} />
         </div>

@@ -27,6 +27,7 @@ const publicRoutes: RouteObject[] = [
       {
         element: <RequireRole role="renter" />,
         children: [
+          { path: "overview", ...page(() => import("@/pages/renter/overview-page")) },
           { path: "inquiries", ...page(() => import("@/pages/renter/inquiries-page")) },
           { path: "viewings", ...page(() => import("@/pages/renter/viewings-page")) },
           { path: "profile", ...page(() => import("@/pages/renter/profile-page")) },
@@ -46,6 +47,8 @@ const landlordRoutes: RouteObject[] = [
   { path: "listings", ...page(() => import("@/pages/landlord/listings-page")) },
   { path: "inquiries", ...page(() => import("@/pages/landlord/inquiries-page")) },
   { path: "viewings", ...page(() => import("@/pages/landlord/viewings-page")) },
+  { path: "renters", ...page(() => import("@/pages/landlord/renters-page")) },
+  { path: "reviews", ...page(() => import("@/pages/landlord/reviews-page")) },
   { path: "verification", ...page(() => import("@/pages/landlord/verification-page")) },
   { path: "profile", ...page(() => import("@/pages/landlord/profile-page")) },
 ]
@@ -57,6 +60,7 @@ const adminRoutes: RouteObject[] = [
   { path: "listings", ...page(() => import("@/pages/admin/listings-page")) },
   { path: "verifications", ...page(() => import("@/pages/admin/verifications-page")) },
   { path: "reports", ...page(() => import("@/pages/admin/reports-page")) },
+  { path: "reviews", ...page(() => import("@/pages/admin/reviews-page")) },
   { path: "analytics", ...page(() => import("@/pages/admin/analytics-page")) },
   { path: "audit", ...page(() => import("@/pages/admin/audit-page")) },
   { path: "profile", ...page(() => import("@/pages/admin/profile-page")) },

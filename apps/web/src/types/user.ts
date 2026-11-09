@@ -47,9 +47,6 @@ export interface LandlordProfile {
   bio: string
   municipalityId: string
   memberSince: string
-  /** Share of inquiries answered, 0–1. */
-  responseRate: number
-  responseTimeHours: number
   languages: string[]
   verifications: Record<VerificationType, VerificationStatus>
 }
@@ -58,4 +55,39 @@ export interface Session {
   user: User
   renterProfile?: RenterProfile
   landlordProfile?: LandlordProfile
+}
+
+/**
+ * Who can see a profile photo besides its owner and Abong admins.
+ * - "public": anyone, including guests. Offered to landlords only.
+ * - "contacts": the other side of a conversation that has gone both ways (see services/contact.ts).
+ * - "private": nobody else.
+ */
+export type PhotoVisibility = "public" | "contacts" | "private"
+
+export interface ProfilePhoto {
+  userId: string
+  /** A re-encoded square image (WebP, or JPEG where the browser can't write WebP), as a data URL. */
+  dataUrl: string
+  visibility: PhotoVisibility
+  updatedAt: string
+}
+
+/** What the owner sees about their own photo. */
+export interface OwnPhoto {
+  url?: string
+  visibility: PhotoVisibility
+  updatedAt?: string
+}
+
+/** How a landlord answers inquiries, measured from messages (services/reputation.ts). */
+export interface ResponseStats {
+  /** Inquiries that counted: opened in the window, and either answered or older than the deadline. */
+  sample: number
+  /** Whether there were enough to show figures at all. */
+  measured: boolean
+  /** Share answered within the deadline, 0–1. Only when measured. */
+  rate?: number
+  /** Median hours to a first reply, across inquiries that got one. Only when measured. */
+  medianHours?: number
 }

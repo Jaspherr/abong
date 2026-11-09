@@ -1,8 +1,8 @@
 import { useQuery } from "@tanstack/react-query"
-import { Building2, Clock, Languages, MessageCircleReply, UserX } from "lucide-react"
+import { Building2, Languages, UserX } from "lucide-react"
 import { Link, useParams } from "react-router"
 import { StatusBadge } from "@/components/common/status-badge"
-import { UserAvatar } from "@/components/common/user-avatar"
+import { PersonAvatar } from "@/features/profile/person-avatar"
 import { EmptyState, ErrorState } from "@/components/feedback/states"
 import { ListingGridSkeleton } from "@/components/feedback/skeletons"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -11,14 +11,20 @@ import { PATHS } from "@/constants/app"
 import { VERIFICATION_STATUS, VERIFICATION_TYPES } from "@/constants/status"
 import { ListingCard } from "@/features/listings/listing-card"
 import { useDocumentTitle } from "@/hooks/use-document-title"
-import { formatDate, formatPercent, pluralize } from "@/lib/format"
+import { daysSince, formatDate, pluralize } from "@/lib/format"
 import { qk } from "@/lib/query"
-import { landlordsService, places } from "@/services"
+import { landlordsService, places, reviewsService } from "@/services"
+import { ReputationSummary, ResponseFacts } from "@/features/reviews/reputation-summary"
+import { ReviewList, ReviewSourceNote } from "@/features/reviews/review-list"
 import type { VerificationType } from "@/types"
+
+/** Landlords who joined this recently get a "new landlord" note instead of a bare "no reviews". */
+const NEW_LANDLORD_DAYS = 90
 
 function LandlordProfilePage() {
   const { id = "" } = useParams()
   const { data, isPending, isError, error, refetch } = useQuery({ queryKey: qk.landlord(id), queryFn: () => landlordsService.getPublicProfile(id) })
+  const reviews = useQuery({ queryKey: qk.landlordReviews(id), queryFn: () => reviewsService.listForLandlord(id) })
   useDocumentTitle(data?.profile.displayName)
 
   if (isError) {
@@ -42,7 +48,7 @@ function LandlordProfilePage() {
           ) : (
             <div className="space-y-6 rounded-3xl bg-card p-6 shadow-card">
               <div className="flex items-center gap-4 lg:flex-col lg:items-start">
-                <UserAvatar name={data.profile.displayName} className="size-16 text-xl lg:size-20 lg:text-2xl" />
+                <PersonAvatar userId={data.user.id} name={data.profile.displayName} className="size-16 text-xl lg:size-20 lg:text-2xl" />
                 <div>
                   <h1 className="type-page-title">{data.profile.displayName}</h1>
                   {data.profile.businessName && <p className="text-muted-foreground">{data.profile.businessName}</p>}
@@ -54,20 +60,14 @@ function LandlordProfilePage() {
                   {places.municipalityName(data.profile.municipalityId)}, landlord since {formatDate(data.profile.memberSince, "yyyy")}
                 </li>
                 <li className="flex items-center gap-2.5">
-                  <MessageCircleReply className="size-4 text-muted-foreground" aria-hidden="true" />
-                  Answers {formatPercent(data.profile.responseRate)} of inquiries
-                </li>
-                <li className="flex items-center gap-2.5">
-                  <Clock className="size-4 text-muted-foreground" aria-hidden="true" />
-                  Usually replies within {data.profile.responseTimeHours <= 1 ? "an hour" : `${data.profile.responseTimeHours} hours`}
-                </li>
-                <li className="flex items-center gap-2.5">
                   <Languages className="size-4 text-muted-foreground" aria-hidden="true" />
                   {data.profile.languages.join(", ")}
                 </li>
               </ul>
+              <ResponseFacts stats={data.response} className="border-t border-border pt-5" />
               <div className="space-y-2 border-t border-border pt-5">
                 <h2 className="font-sans text-sm font-semibold">Verification</h2>
+                <p className="text-caption text-muted-foreground">Checks Abong made. Separate from reviews and ratings.</p>
                 <ul className="space-y-2">
                   {(Object.keys(VERIFICATION_TYPES) as VerificationType[]).map((type) => {
                     const meta = VERIFICATION_STATUS[data.profile.verifications[type]]
@@ -97,6 +97,22 @@ function LandlordProfilePage() {
               </p>
             </section>
           )}
+          <section id="reviews" aria-labelledby="reviews-title" className="scroll-mt-24 space-y-6">
+            <h2 id="reviews-title" className="type-subsection">
+              Reviews
+            </h2>
+            {reviews.isPending || isPending ? (
+              <Skeleton className="h-32 rounded-xl" />
+            ) : reviews.isError ? (
+              <ErrorState onRetry={() => reviews.refetch()} />
+            ) : (
+              <>
+                <ReputationSummary summary={reviews.data.summary} newLandlord={daysSince(data.profile.memberSince) < NEW_LANDLORD_DAYS} />
+                <ReviewList reviews={reviews.data.reviews} landlordName={data.profile.displayName} showProperty />
+                <ReviewSourceNote />
+              </>
+            )}
+          </section>
           <section className="space-y-6">
             <h2 className="type-subsection">Places for rent</h2>
             {isPending ? (

@@ -3,7 +3,7 @@ import { ArrowUpRight, Flag, ShieldCheck, UsersRound } from "lucide-react"
 import { useMemo, useState } from "react"
 import { Link } from "react-router"
 import { LineTabs } from "@/components/common/line-tabs"
-import { UserAvatar } from "@/components/common/user-avatar"
+import { PersonAvatar } from "@/features/profile/person-avatar"
 import { EmptyState, ErrorState } from "@/components/feedback/states"
 import { TableSkeleton } from "@/components/feedback/skeletons"
 import { SearchInput } from "@/components/forms/search-input"
@@ -215,7 +215,7 @@ function AdminLandlordsPage() {
                   return (
                     <li key={profile.id} className="py-5 first:pt-1">
                       <div className="flex min-w-0 items-start gap-3">
-                        <UserAvatar name={profile.displayName} />
+                        <PersonAvatar userId={profile.userId} name={profile.displayName} />
                         <div className="min-w-0 flex-1">
                           <p className="truncate text-sm font-semibold tracking-[-0.015em] text-foreground">
                             {profile.displayName}
@@ -277,7 +277,7 @@ function AdminLandlordsPage() {
                       >
                         <TableCell className="max-w-0 min-w-56 py-4 pl-3 whitespace-normal sm:pl-4">
                           <div className="flex min-w-0 items-center gap-3">
-                            <UserAvatar name={profile.displayName} />
+                            <PersonAvatar userId={profile.userId} name={profile.displayName} />
                             <div className="min-w-0">
                               <p className="truncate text-sm font-semibold tracking-[-0.01em] text-foreground">{profile.displayName}</p>
                               <p className="mt-0.5 truncate text-xs text-muted-foreground">

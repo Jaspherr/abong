@@ -95,8 +95,6 @@ export const authService = {
           bio: "",
           municipalityId: input.municipalityId,
           memberSince: now,
-          responseRate: 1,
-          responseTimeHours: 0,
           languages: ["Filipino", "English"],
           verifications: { identity: "not-started", contact: "not-started", property: "not-started" },
         })

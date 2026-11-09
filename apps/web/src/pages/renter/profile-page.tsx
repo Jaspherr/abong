@@ -1,5 +1,5 @@
 
-import { Loader2, UserRound } from "lucide-react"
+import { Loader2 } from "lucide-react"
 import { useState } from "react"
 import { toast } from "sonner"
 
@@ -17,6 +17,7 @@ import {
 import { Textarea } from "@/components/ui/textarea"
 
 import { useAuth } from "@/features/auth/auth-context"
+import { ProfilePhotoControl } from "@/features/profile/profile-photo-control"
 import {
   useMunicipalities,
   useUniversities,
@@ -107,15 +108,6 @@ function RenterProfilePage() {
   )
 
   const { values, set, blur, errorFor } = form
-
-  const initials = values.name
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part.charAt(0))
-    .join("")
-    .toUpperCase()
 
   // ----------------------------------------------------------
   // SAVE PROFILE
@@ -215,24 +207,7 @@ function RenterProfilePage() {
         <aside className="min-w-0 lg:sticky lg:top-28 lg:h-fit">
 
           {/* Identity */}
-          <div className="flex items-center gap-4 lg:flex-col lg:items-start lg:gap-5">
-
-            <div
-              className="flex size-18 shrink-0 items-center justify-center rounded-2xl border border-primary/15 bg-primary/10 text-primary sm:size-20"
-              aria-hidden="true"
-            >
-              {initials ? (
-                <span className="font-heading text-2xl font-semibold tracking-tight sm:text-3xl">
-                  {initials}
-                </span>
-              ) : (
-                <UserRound
-                  className="size-8"
-                  strokeWidth={1.4}
-                />
-              )}
-            </div>
-
+          <ProfilePhotoControl name={values.name.trim() || user.name}>
             <div className="min-w-0">
               <span className="text-caption font-semibold text-primary">
                 Renter account
@@ -246,7 +221,7 @@ function RenterProfilePage() {
                 {user.email}
               </p>
             </div>
-          </div>
+          </ProfilePhotoControl>
 
           {/* Account information */}
           <div className="mt-7 border-t border-border pt-6 lg:mt-9">

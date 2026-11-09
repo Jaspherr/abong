@@ -46,3 +46,12 @@ export function requireAdmin(): User {
   }
   return user
 }
+
+/** Refuses the call unless someone with an active account is signed in, and returns them. */
+export function requireUser(): User {
+  const user = sessionUser()
+  if (!user || user.status === "suspended" || user.status === "deactivated") {
+    throw new ServiceError("forbidden", "Sign in to do this.")
+  }
+  return user
+}

@@ -89,3 +89,6 @@ export function initials(name: string) {
 export function pluralize(count: number, singular: string, plural = `${singular}s`) {
   return `${count} ${count === 1 ? singular : plural}`
 }
+
+/** Today's date in the local calendar, yyyy-MM-dd. Call it in handlers or at the top of a page, not inside render loops. */
+export const todayIso = () => format(new Date(), "yyyy-MM-dd")

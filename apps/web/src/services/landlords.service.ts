@@ -1,6 +1,7 @@
-import type { LandlordProfile, User } from "@/types"
+import type { LandlordProfile, ResponseStats, User } from "@/types"
 import { toListing } from "./listings.service"
 import { db } from "./mock/db"
+import { responseStats } from "./reputation"
 import { notFound, respond } from "./mock/latency"
 import { isPublic } from "./visibility"
 
@@ -9,6 +10,7 @@ export interface PublicLandlord {
   user: Pick<User, "id" | "name" | "lastActiveAt">
   listings: ReturnType<typeof toListing>[]
   stats: { activeListings: number; totalUnits: number; availableUnits: number }
+  response: ResponseStats
 }
 
 export const landlordsService = {
@@ -24,6 +26,7 @@ export const landlordsService = {
         profile,
         user: { id: user.id, name: user.name, lastActiveAt: user.lastActiveAt },
         listings,
+        response: responseStats(id),
         stats: {
           activeListings: listings.length,
           totalUnits: listings.reduce((s, l) => s + l.totalUnitCount, 0),

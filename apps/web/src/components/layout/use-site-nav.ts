@@ -9,10 +9,13 @@ import {
   GraduationCap,
   Heart,
   History,
+  House,
+  KeyRound,
   LayoutList,
   MessageSquare,
   Search,
   ShieldCheck,
+  Star,
   Store,
   UserRound,
   Users,
@@ -23,7 +26,7 @@ import { PATHS } from "@/constants/app"
 import { useAuth } from "@/features/auth/auth-context"
 import { useFavoriteIds } from "@/features/favorites/use-favorites"
 import { qk } from "@/lib/query"
-import { adminService, inquiriesService, verificationService, viewingsService } from "@/services"
+import { adminService, inquiriesService, rentalsService, verificationService, viewingsService } from "@/services"
 import type { UserRole } from "@/types"
 
 export interface SiteNavItem {
@@ -79,6 +82,11 @@ function useAttentionCounts(role: UserRole | undefined) {
     enabled: isLandlord,
   })
   const admin = useQuery({ queryKey: qk.admin.overview, queryFn: adminService.getOverview, enabled: role === "admin" })
+  const rentals = useQuery({
+    queryKey: qk.myRentals(userId),
+    queryFn: rentalsService.listMine,
+    enabled: isRenter || isLandlord,
+  })
 
   const verifications = verification.data?.statuses
   return {
@@ -88,7 +96,9 @@ function useAttentionCounts(role: UserRole | undefined) {
     landlordVerificationTodo: verifications
       ? Object.values(verifications).filter((s) => s !== "verified" && s !== "pending").length
       : 0,
-    adminQueue: admin.data?.queue ?? { listings: 0, verifications: 0, reports: 0 },
+    adminQueue: admin.data?.queue ?? { listings: 0, verifications: 0, reports: 0, reviews: 0 },
+    /** Stays the other side recorded and the viewer hasn't answered. */
+    staysToConfirm: rentals.data?.filter((r) => r.awaitingMe).length ?? 0,
   }
 }
 
@@ -115,6 +125,7 @@ export function useSiteNav(): SiteNavGroup[] {
         id: "account",
         label: "Your rentals",
         items: [
+          { to: PATHS.overview, label: "Overview", icon: House, count: c.staysToConfirm, countLabel: "to confirm" },
           { to: PATHS.favorites, label: "Saved", icon: Heart, count: saved, countLabel: "saved" },
           { to: PATHS.inquiries, label: "Inquiries", icon: MessageSquare, count: c.renterUnread, countLabel: "unread" },
           { to: PATHS.viewings, label: "Viewings", icon: CalendarDays },
@@ -142,6 +153,8 @@ export function useSiteNav(): SiteNavGroup[] {
             count: c.landlordPendingViewings,
             countLabel: "waiting for a reply",
           },
+          { to: PATHS.landlord.renters, label: "Renters", icon: KeyRound, count: c.staysToConfirm, countLabel: "to confirm" },
+          { to: PATHS.landlord.reviews, label: "Reviews", icon: Star, compact: true },
           {
             to: PATHS.landlord.verification,
             label: "Verification",
@@ -172,6 +185,7 @@ export function useSiteNav(): SiteNavGroup[] {
           countLabel: "to review",
         },
         { to: PATHS.admin.reports, label: "Reports", icon: Flag, count: c.adminQueue.reports, countLabel: "open" },
+        { to: PATHS.admin.reviews, label: "Reviews", icon: Star, count: c.adminQueue.reviews, countLabel: "waiting", compact: true },
         { to: PATHS.admin.users, label: "Users", icon: Users },
         { to: PATHS.admin.landlords, label: "Landlords", icon: UsersRound, compact: true },
         { to: PATHS.admin.analytics, label: "Analytics", icon: BarChart3, compact: true },

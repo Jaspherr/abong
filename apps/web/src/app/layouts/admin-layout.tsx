@@ -7,6 +7,7 @@ import {
   Gauge,
   LayoutList,
   ShieldCheck,
+  Star,
   Users,
   UsersRound,
   type LucideIcon,
@@ -20,7 +21,7 @@ import { qk } from "@/lib/query"
 import { cn } from "@/lib/utils"
 import { adminService } from "@/services"
 
-type QueueKey = "listings" | "verifications" | "reports"
+type QueueKey = "listings" | "verifications" | "reports" | "reviews"
 
 type RailItem = {
   to: string
@@ -43,6 +44,7 @@ const RAIL: RailGroup[] = [
       { to: PATHS.admin.listings, label: "Moderation", icon: LayoutList, queue: "listings" },
       { to: PATHS.admin.verifications, label: "Verifications", icon: ShieldCheck, queue: "verifications" },
       { to: PATHS.admin.reports, label: "Reports", icon: Flag, queue: "reports" },
+      { to: PATHS.admin.reviews, label: "Reviews and stays", icon: Star, queue: "reviews" },
     ],
   },
   {

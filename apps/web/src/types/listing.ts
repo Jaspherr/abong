@@ -1,5 +1,5 @@
 import type { Address, Coordinates, University } from "./location"
-import type { LandlordProfile, VerificationStatus } from "./user"
+import type { LandlordProfile, ResponseStats, VerificationStatus } from "./user"
 
 export type PropertyType =
   | "boarding-house"
@@ -130,7 +130,9 @@ export interface Listing extends Property {
   availableBedCount: number
   totalUnitCount: number
   isVerified: boolean
-  landlord: Pick<LandlordProfile, "id" | "displayName" | "verifications" | "responseRate" | "responseTimeHours" | "memberSince">
+  landlord: Pick<LandlordProfile, "id" | "userId" | "displayName" | "verifications" | "memberSince"> & {
+    response: ResponseStats
+  }
   nearestUniversity?: DistanceInfo
   /** Present when the search is anchored to a university or landmark. */
   anchorDistance?: { label: string; distanceKm: number; walkMinutes: number }

@@ -1,5 +1,6 @@
 import { NEAR_RADIUS_KM, estimateWalkMinutes, haversineKm } from "@/lib/geo"
 import type { DistanceInfo, Listing, Property, RoomArrangement, SearchFilters, SearchResult } from "@/types"
+import { responseStats } from "./reputation"
 import { db } from "./mock/db"
 import { notFound, respond } from "./mock/latency"
 import { places } from "./locations.service"
@@ -42,10 +43,10 @@ export function toListing(property: Property, anchor?: { label: string; coordina
       property.propertyVerification === "verified" && landlord.verifications.identity === "verified",
     landlord: {
       id: landlord.id,
+      userId: landlord.userId,
       displayName: landlord.displayName,
       verifications: landlord.verifications,
-      responseRate: landlord.responseRate,
-      responseTimeHours: landlord.responseTimeHours,
+      response: responseStats(landlord.id),
       memberSince: landlord.memberSince,
     },
     nearestUniversity: nearestUniversity && nearestUniversity.distanceKm < 6 ? nearestUniversity : undefined,

@@ -16,6 +16,7 @@ export const PATHS = {
   landlordProfile: (id: string) => `/landlord/${id}`,
   schools: "/near",
   near: (slug: string) => `/near/${slug}`,
+  overview: "/overview",
   favorites: "/favorites",
   inquiries: "/inquiries",
   viewings: "/viewings",
@@ -31,6 +32,8 @@ export const PATHS = {
     listings: "/landlord/listings",
     inquiries: "/landlord/inquiries",
     viewings: "/landlord/viewings",
+    renters: "/landlord/renters",
+    reviews: "/landlord/reviews",
     verification: "/landlord/verification",
     profile: "/landlord/profile",
   },
@@ -44,6 +47,7 @@ export const PATHS = {
     reports: "/admin/reports",
     analytics: "/admin/analytics",
     audit: "/admin/audit",
+    reviews: "/admin/reviews",
   },
 } as const
 

@@ -103,7 +103,7 @@ const MODERATION_RESULT: Record<ModerationAction, ListingStatus> = {
 }
 
 export const adminService = {
-  getOverview(): Promise<{ metrics: AdminMetric[]; activity: ActivityEvent[]; queue: { listings: number; verifications: number; reports: number } }> {
+  getOverview(): Promise<{ metrics: AdminMetric[]; activity: ActivityEvent[]; queue: { listings: number; verifications: number; reports: number; reviews: number } }> {
     return respond(() => {
       requireAdmin()
       // Counted from the records themselves, so the numbers move when the data does.
@@ -128,6 +128,10 @@ export const adminService = {
           listings: countBy(db.properties, (p) => p.status === "pending-review"),
           verifications: countBy(db.verificationRequests, (r) => r.status === "pending"),
           reports: countBy(db.reports, (r) => r.status === "open" || r.status === "investigating"),
+          // Disputed stays plus reviews with an open report.
+          reviews:
+            countBy(db.rentals, (r) => r.status === "disputed") +
+            new Set(db.reviewReports.filter((r) => r.status === "open").map((r) => r.reviewId)).size,
         },
       }
     })

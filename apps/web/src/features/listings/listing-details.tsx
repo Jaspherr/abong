@@ -16,16 +16,21 @@ import {
   Zap,
   type LucideIcon,
 } from "lucide-react"
+import { useQuery } from "@tanstack/react-query"
 import { Link } from "react-router"
-import { UserAvatar } from "@/components/common/user-avatar"
+import { PersonAvatar } from "@/features/profile/person-avatar"
 import { StatusBadge } from "@/components/common/status-badge"
 import { Button } from "@/components/ui/button"
 import { PATHS } from "@/constants/app"
 import { AMENITIES, ARRANGEMENTS, UNIT_STATUSES, VISITOR_POLICIES } from "@/constants/listing"
 import { VERIFICATION_STATUS, VERIFICATION_TYPES } from "@/constants/status"
 import { InquiryDialog } from "@/features/inquiries/inquiry-dialog"
+import { LandlordRatingLine } from "@/features/reviews/listing-reviews"
+import { ResponseFacts } from "@/features/reviews/reputation-summary"
 import { formatDate, formatDistance, formatMonths, formatPeso, formatPercent, isLaterThanTomorrow } from "@/lib/format"
+import { qk } from "@/lib/query"
 import { cn } from "@/lib/utils"
+import { reviewsService } from "@/services"
 import type { Landmark as LandmarkType, Listing, RentalUnit, VerificationType } from "@/types"
 import { amenityPreview, moveInEstimate, priceUnit, unitOpenSlots } from "./listing-utils"
 
@@ -278,26 +283,19 @@ export function NearbyList({ places }: { places: Array<{ id: string; name: strin
 
 export function LandlordCard({ listing }: { listing: Listing }) {
   const { landlord } = listing
+  const reviews = useQuery({ queryKey: qk.landlordReviews(landlord.id), queryFn: () => reviewsService.listForLandlord(landlord.id) })
   return (
     <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
       <div className="flex items-center gap-3 sm:w-64 sm:shrink-0">
-        <UserAvatar name={landlord.displayName} className="size-14 text-lg" />
+        <PersonAvatar userId={landlord.userId} name={landlord.displayName} className="size-14 text-lg" />
         <div className="min-w-0">
           <p className="truncate font-semibold">{landlord.displayName}</p>
           <p className="text-sm text-muted-foreground">On Abong since {formatDate(landlord.memberSince, "MMMM yyyy")}</p>
         </div>
       </div>
       <div className="flex-1 space-y-4">
-        <dl className="grid grid-cols-2 gap-3 text-sm">
-          <div>
-            <dt className="text-muted-foreground">Response rate</dt>
-            <dd className="font-semibold tabular">{formatPercent(landlord.responseRate)}</dd>
-          </div>
-          <div>
-            <dt className="text-muted-foreground">Usually replies</dt>
-            <dd className="font-semibold">{landlord.responseTimeHours <= 1 ? "within an hour" : `within ${landlord.responseTimeHours} hours`}</dd>
-          </div>
-        </dl>
+        <ResponseFacts stats={landlord.response} />
+        {reviews.data && <LandlordRatingLine summary={reviews.data.summary} landlordId={landlord.id} />}
         {/* What was checked, one line each; only a completed check gets the mark. */}
         <ul className="space-y-1.5 text-sm" aria-label="Verification">
           {(Object.keys(landlord.verifications) as VerificationType[]).map((type) => {

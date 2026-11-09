@@ -2,8 +2,9 @@ import { favorites, inquiries, notifications, viewings } from "@/data/engagement
 import { landmarks, municipalities, universities } from "@/data/locations"
 import { activity, reports, verificationRequests } from "@/data/moderation"
 import { properties } from "@/data/properties"
+import { rentals, reviewReports, reviews } from "@/data/rentals"
 import { landlordProfiles, renterProfiles, users } from "@/data/users"
-import type { AuditEntry } from "@/types"
+import type { AuditEntry, ProfilePhoto } from "@/types"
 
 /**
  * In-memory stand-in for the future backend. Services read and mutate this
@@ -30,6 +31,11 @@ function seed() {
     activity,
     // Starts empty: the log holds only decisions actually made in this demo.
     auditLog: [] as AuditEntry[],
+    // Starts empty: demo accounts never use photos of real people.
+    profilePhotos: [] as ProfilePhoto[],
+    rentals,
+    reviews,
+    reviewReports,
   })
 }
 

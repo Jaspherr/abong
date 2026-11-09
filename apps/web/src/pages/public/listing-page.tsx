@@ -13,6 +13,7 @@ import { FavoriteButton } from "@/features/favorites/favorite-button"
 import { ActionPanel, MobileActionBar } from "@/features/listings/action-panel"
 import { shareListing } from "@/features/listings/share-listing"
 import { ListingCard } from "@/features/listings/listing-card"
+import { ListingReviews } from "@/features/reviews/listing-reviews"
 import { AmenityGrid, DetailSection, HouseRules, KeyFacts, LandlordCard, MoveInCosts, NearbyList, UnitsList } from "@/features/listings/listing-details"
 import { ListingGallery } from "@/features/listings/listing-gallery"
 import { fullAddress, typeLabel } from "@/features/listings/listing-utils"
@@ -159,6 +160,9 @@ function ListingPage() {
                   <h3 className="mb-1 text-sm font-semibold">Nearby schools and landmarks</h3>
                   <NearbyList places={nearby.data ?? []} />
                 </div>
+              </DetailSection>
+              <DetailSection id="reviews" title="Reviews of this place">
+                <ListingReviews listing={listing} />
               </DetailSection>
               <DetailSection id="landlord" title="Your landlord">
                 <LandlordCard listing={listing} />

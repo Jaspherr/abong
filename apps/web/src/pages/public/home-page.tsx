@@ -179,16 +179,16 @@ function HeroGallery({ first, second }: HeroGalleryProps) {
       </div>
 
       {/* Desktop: asymmetric editorial gallery */}
-      <div className="hidden min-h-[34rem] grid-cols-[1.12fr_0.88fr] items-end gap-3 lg:grid">
+      <div className="hidden h-136 grid-cols-[1.12fr_0.88fr] gap-3 lg:grid xl:h-148">
 
         {first ? (
           <HeroListing
             listing={first}
             priority
-            className="h-[32rem] self-start xl:h-[35rem]"
+            className="h-full"
           />
         ) : (
-          <div className="flex h-[32rem] flex-col justify-end rounded-2xl bg-muted p-8 xl:h-[35rem]">
+          <div className="flex h-full flex-col justify-end rounded-2xl bg-muted p-8">
             <Compass className="mb-5 size-9 text-primary" />
             <p className="font-heading text-2xl font-semibold tracking-tight">
               Your next place starts here.
@@ -199,7 +199,7 @@ function HeroGallery({ first, second }: HeroGalleryProps) {
           </div>
         )}
 
-        <div className="flex h-[34rem] min-w-0 flex-col gap-3 xl:h-[37rem]">
+        <div className="flex h-full min-w-0 flex-col gap-3">
 
           {/* Branded editorial tile */}
           <div className="relative flex min-h-0 flex-1 flex-col justify-between overflow-hidden rounded-2xl bg-primary p-5 text-primary-foreground xl:p-6">

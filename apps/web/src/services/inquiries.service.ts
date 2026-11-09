@@ -75,11 +75,12 @@ export const inquiriesService = {
     }, 500)
   },
 
-  sendMessage(inquiryId: string, senderId: string, body: string): Promise<InquiryThread> {
+  /** `automated` marks messages no person wrote, such as the demo's simulated replies; they never count as a response. */
+  sendMessage(inquiryId: string, senderId: string, body: string, options?: { automated?: boolean }): Promise<InquiryThread> {
     return respond(() => {
       const inquiry = db.inquiries.find((i) => i.id === inquiryId) ?? notFound("Conversation")
       const now = new Date().toISOString()
-      inquiry.messages.push({ id: nextId("m"), senderId, body, sentAt: now })
+      inquiry.messages.push({ id: nextId("m"), senderId, body, sentAt: now, ...(options?.automated && { automated: true }) })
       inquiry.updatedAt = now
       if (senderId === inquiry.renterId) inquiry.unreadForLandlord += 1
       else inquiry.unreadForRenter += 1

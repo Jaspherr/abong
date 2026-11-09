@@ -32,6 +32,16 @@ export const qk = {
   landlordProperty: (landlordId: string, id: string) => ["properties", landlordId, id] as const,
   verification: (landlordId: string) => ["verification", landlordId] as const,
   notifications: (userId: string) => ["notifications", userId] as const,
+  /** Keyed by viewer too: what a photo request returns depends on who is asking. */
+  photo: (viewerId: string | undefined, userId: string) => ["photos", viewerId ?? "guest", userId] as const,
+  myPhoto: (userId: string) => ["photos", "mine", userId] as const,
+  myRentals: (userId: string) => ["rentals", "mine", userId] as const,
+  rentalOptions: (userId: string) => ["rentals", "options", userId] as const,
+  landlordReviews: (landlordId: string) => ["reviews", "landlord", landlordId] as const,
+  listingReviews: (listingId: string) => ["reviews", "listing", listingId] as const,
+  myReviews: (userId: string) => ["reviews", "mine", userId] as const,
+  reviewsAboutMe: (userId: string) => ["reviews", "about-me", userId] as const,
+  reviewOpportunities: (userId: string) => ["reviews", "opportunities", userId] as const,
   admin: {
     overview: ["admin", "overview"] as const,
     analytics: ["admin", "analytics"] as const,
@@ -43,5 +53,8 @@ export const qk = {
     reports: ["admin", "reports"] as const,
     audit: (query: object) => ["admin", "audit", query] as const,
     history: (ids: string[]) => ["admin", "history", ids] as const,
+    reportedReviews: ["admin", "reviews", "reported"] as const,
+    hiddenReviews: ["admin", "reviews", "hidden"] as const,
+    rentalDisputes: ["admin", "rentals", "disputes"] as const,
   },
 }

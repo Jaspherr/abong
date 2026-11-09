@@ -3,7 +3,6 @@ import { BadgeCheck, ExternalLink, Globe, Loader2 } from "lucide-react"
 import { Link } from "react-router"
 import { toast } from "sonner"
 import { PageHeader } from "@/components/common/page-header"
-import { UserAvatar } from "@/components/common/user-avatar"
 import { FormField } from "@/components/forms/form-field"
 import { ErrorState } from "@/components/feedback/states"
 import { SignOutButton } from "@/components/layout/sign-out-button"
@@ -15,6 +14,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { PATHS } from "@/constants/app"
 import { useAuth } from "@/features/auth/auth-context"
+import { ProfilePhotoControl } from "@/features/profile/profile-photo-control"
 import { useDocumentTitle } from "@/hooks/use-document-title"
 import { useFormState } from "@/hooks/use-form-state"
 import { qk } from "@/lib/query"
@@ -129,14 +129,13 @@ function LandlordProfilePage() {
       ) : (
         <div className="grid grid-cols-1 items-start gap-8 border-t border-border pt-7 lg:grid-cols-[17rem_minmax(0,1fr)] lg:gap-12">
           <aside className="space-y-5">
-            <div className="flex items-center gap-3 lg:flex-col lg:items-start">
-              <UserAvatar name={data.displayName} className="size-14 text-lead lg:size-20 lg:rounded-2xl" />
+            <ProfilePhotoControl name={data.displayName} avatarClassName="size-14 text-lead lg:size-20">
               <div className="min-w-0">
                 <p className="truncate type-card-title">{data.displayName}</p>
                 <p className="truncate text-meta text-muted-foreground">{user!.email}</p>
                 <p className="text-meta text-muted-foreground">Landlord account</p>
               </div>
-            </div>
+            </ProfilePhotoControl>
             <nav aria-label="Account links" className="border-t border-border pt-3">
               <Link to={PATHS.landlord.verification} className={linkClass}>
                 <BadgeCheck className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />

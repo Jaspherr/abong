@@ -2,7 +2,7 @@ import { Heart, Menu, Plus } from "lucide-react"
 import { useState } from "react"
 import { Link, NavLink } from "react-router"
 import { Logo } from "@/components/common/logo"
-import { UserAvatar } from "@/components/common/user-avatar"
+import { PersonAvatar } from "@/features/profile/person-avatar"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { PATHS } from "@/constants/app"
@@ -149,7 +149,7 @@ export function SiteHeader({
               <SheetHeader className="border-b border-border">
                 {user ? (
                   <div className="flex items-center gap-3 pr-8">
-                    <UserAvatar name={user.name} className="size-10" />
+                    <PersonAvatar userId={user.id} name={user.name} className="size-10" />
                     <div className="min-w-0">
                       <SheetTitle className="truncate text-base">{user.name}</SheetTitle>
                       <SheetDescription className="truncate">{ROLE_LABELS[user.role]} account</SheetDescription>

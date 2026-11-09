@@ -1,7 +1,7 @@
 import { Repeat, RotateCcw } from "lucide-react"
 import { Link } from "react-router"
 import { useDemoRoleSwitch } from "@/features/auth/use-demo-role-switch"
-import { UserAvatar } from "@/components/common/user-avatar"
+import { PersonAvatar } from "@/features/profile/person-avatar"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -44,12 +44,12 @@ export function UserMenu({ align = "end" }: { align?: "start" | "end" }) {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="size-10">
               <span className="sr-only">Demo menu for {user.name}</span>
-              <UserAvatar name={user.name} className="size-8" />
+              <PersonAvatar userId={user.id} name={user.name} className="size-8" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align={align} className="w-72">
             <DropdownMenuLabel className="flex items-center gap-3 py-2">
-              <UserAvatar name={user.name} className="size-9" />
+              <PersonAvatar userId={user.id} name={user.name} className="size-9" />
               <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                 <span className="flex items-center gap-2">
                   <span className="truncate text-sm font-semibold text-foreground">{user.name}</span>
@@ -89,11 +89,11 @@ export function UserMenu({ align = "end" }: { align?: "start" | "end" }) {
         // With no demo actions there is no menu to open, so the avatar goes straight to the profile.
         <Button variant="ghost" size="icon" asChild className="size-10">
           <Link to={profilePath} aria-label={`Profile for ${user.name}`}>
-            <UserAvatar name={user.name} className="size-8" />
+            <PersonAvatar userId={user.id} name={user.name} className="size-8" />
           </Link>
         </Button>
       ) : (
-        <UserAvatar name={user.name} className="size-8" />
+        <PersonAvatar userId={user.id} name={user.name} className="size-8" />
       )}
     </div>
   )

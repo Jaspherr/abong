@@ -4,7 +4,7 @@ import { useState } from "react"
 import { toast } from "sonner"
 import { Pagination } from "@/components/common/pagination"
 import { MetaBadge, StatusBadge } from "@/components/common/status-badge"
-import { UserAvatar } from "@/components/common/user-avatar"
+import { PersonAvatar } from "@/features/profile/person-avatar"
 import { EmptyState, ErrorState } from "@/components/feedback/states"
 import { TableSkeleton } from "@/components/feedback/skeletons"
 import { FormField } from "@/components/forms/form-field"
@@ -297,7 +297,7 @@ function UsersPage() {
                   {data.rows.map((user) => (
                     <li key={user.id} className="py-5 first:pt-1">
                       <div className="flex min-w-0 items-start gap-3">
-                        <UserAvatar name={user.name} />
+                        <PersonAvatar userId={user.id} name={user.name} />
                         <div className="min-w-0 flex-1">
                           <p className="truncate text-sm font-semibold tracking-[-0.015em] text-foreground">{user.name}</p>
                           <p className="mt-0.5 truncate text-xs text-muted-foreground">{user.email}</p>
@@ -349,7 +349,7 @@ function UsersPage() {
                         >
                           <TableCell className="max-w-0 min-w-52 py-4 pl-3 whitespace-normal sm:pl-4">
                             <div className="flex min-w-0 items-center gap-3">
-                              <UserAvatar name={user.name} />
+                              <PersonAvatar userId={user.id} name={user.name} />
                               <div className="min-w-0">
                                 <p className="truncate text-sm font-semibold tracking-[-0.01em] text-foreground">{user.name}</p>
                                 <p className="mt-0.5 truncate text-xs text-muted-foreground">{user.email}</p>

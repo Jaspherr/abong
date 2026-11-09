@@ -34,11 +34,38 @@ import { useDocumentTitle } from "@/hooks/use-document-title"
 import { qk } from "@/lib/query"
 import { cn } from "@/lib/utils"
 import {
+  reviewsService,
   viewingsService,
+  type ReviewOpportunity,
   type ViewingWithContext,
 } from "@/services"
+import { ReviewDialog } from "@/features/reviews/review-dialog"
 
 type View = "upcoming" | "history"
+
+/** "Review the viewing" on a completed viewing the renter can review; nothing otherwise. */
+function ViewingReviewAction({ opportunity }: { opportunity?: ReviewOpportunity }) {
+  if (!opportunity) return null
+  if (opportunity.eligibility.state === "reviewed") {
+    return <p className="text-caption text-muted-foreground">You reviewed this viewing.</p>
+  }
+  if (opportunity.eligibility.state !== "eligible") return null
+  return (
+    <ReviewDialog
+      target={{
+        mode: "create",
+        kind: "viewing",
+        sourceId: opportunity.sourceId,
+        propertyName: opportunity.propertyName,
+        landlordName: opportunity.landlordName,
+      }}
+    >
+      <Button size="sm" variant="outline">
+        Review the viewing
+      </Button>
+    </ReviewDialog>
+  )
+}
 
 const isUpcoming = (viewing: ViewingWithContext) =>
   viewing.status === "pending" ||
@@ -107,6 +134,17 @@ function RenterViewingsPage() {
   ).length
 
   const displayed = view === "upcoming" ? upcoming : past
+
+  // Completed viewings the renter can still review, or already has.
+  const opportunities = useQuery({
+    queryKey: qk.reviewOpportunities(userId),
+    queryFn: reviewsService.myOpportunities,
+  })
+  const reviewable = new Map(
+    (opportunities.data ?? [])
+      .filter((o) => o.kind === "viewing")
+      .map((o) => [o.sourceId, o]),
+  )
 
   // ==========================================================
   // PAGE
@@ -508,7 +546,11 @@ function RenterViewingsPage() {
                             </AlertDialogContent>
                           </AlertDialog>
                         </>
-                      ) : undefined
+                      ) : (
+                        <ViewingReviewAction
+                          opportunity={reviewable.get(viewing.id)}
+                        />
+                      )
                     }
                   />
                 </li>

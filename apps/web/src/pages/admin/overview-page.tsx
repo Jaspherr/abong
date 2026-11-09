@@ -15,7 +15,7 @@ import { useDocumentTitle } from "@/hooks/use-document-title"
 import { formatNumber, formatRelative, pluralize } from "@/lib/format"
 import { qk } from "@/lib/query"
 import { cn } from "@/lib/utils"
-import { adminService, verificationService } from "@/services"
+import { adminService, rentalsService, verificationService } from "@/services"
 import type { ActivityKind } from "@/types"
 
 const ACTIVITY_DOT: Record<ActivityKind, string> = {
@@ -128,10 +128,11 @@ function AdminOverviewPage() {
   const moderation = useQuery({ queryKey: qk.admin.moderation, queryFn: adminService.listModeration })
   const verifications = useQuery({ queryKey: qk.admin.verifications, queryFn: verificationService.listQueue })
   const reports = useQuery({ queryKey: qk.admin.reports, queryFn: adminService.listReports })
+  const disputes = useQuery({ queryKey: qk.admin.rentalDisputes, queryFn: rentalsService.listDisputes })
 
   if (isError) return <ErrorState onRetry={() => refetch()} />
 
-  const waiting = data ? data.queue.listings + data.queue.verifications + data.queue.reports : 0
+  const waiting = data ? data.queue.listings + data.queue.verifications + data.queue.reports + data.queue.reviews : 0
 
   const listingItems: QueueItem[] = (moderation.data ?? [])
     .filter((r) => r.status === "pending-review")
@@ -170,6 +171,15 @@ function AdminOverviewPage() {
       detail: `${r.listingName}. Filed ${formatRelative(r.createdAt)}`,
       badge: <MetaBadge meta={REPORT_STATUS[r.status]} />,
     }))
+
+  const disputeItems: QueueItem[] = (disputes.data ?? []).slice(0, PREVIEW).map((r) => ({
+    id: r.id,
+    to: PATHS.admin.reviews,
+    lead: <UserAvatar name={r.openedByName} />,
+    title: `Disputed stay at ${r.propertyName}`,
+    detail: `Reported by ${r.openedByName}${r.dispute ? ` ${formatRelative(r.dispute.openedAt)}` : ""}`,
+    badge: <MetaBadge meta={{ label: "Disputed", tone: "warning" }} />,
+  }))
 
   return (
     <div className="w-full space-y-8 pb-10">
@@ -220,6 +230,15 @@ function AdminOverviewPage() {
               items={reportItems}
               loading={reports.isPending}
               error={reports.isError}
+            />
+            <Queue
+              title="Reviews and stays"
+              hint="Disputed stays and reported reviews"
+              to={PATHS.admin.reviews}
+              count={data?.queue.reviews}
+              items={disputeItems}
+              loading={disputes.isPending}
+              error={disputes.isError}
             />
           </div>
         </section>
