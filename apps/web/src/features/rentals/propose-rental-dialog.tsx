@@ -16,8 +16,9 @@ const WHOLE = "whole"
 /**
  * Records a stay for the other side to confirm. Renters pick from properties of landlords who've
  * replied to them; landlords pick from renters they've replied to. Nothing counts until confirmed.
+ * `defaultListingId` preselects the place when it's opened from that property's page.
  */
-export function ProposeRentalDialog({ children }: { children: ReactNode }) {
+export function ProposeRentalDialog({ children, defaultListingId = "" }: { children: ReactNode; defaultListingId?: string }) {
   const { user } = useAuth()
   const client = useQueryClient()
   const ids = { renter: useId(), property: useId(), unit: useId(), date: useId() }
@@ -71,7 +72,7 @@ export function ProposeRentalDialog({ children }: { children: ReactNode }) {
         setOpen(next)
         if (next) {
           setRenterId("")
-          setListingId("")
+          setListingId(defaultListingId)
           setUnitId(WHOLE)
           setStartDate("")
           setAttempted(false)

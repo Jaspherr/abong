@@ -13,7 +13,8 @@ import { PATHS } from "@/constants/app"
 import { PROPERTY_TYPES } from "@/constants/listing"
 import { LISTING_STATUS, VERIFICATION_STATUS } from "@/constants/status"
 import { PropertyForm } from "@/features/landlord/property-form"
-import { useInvalidateProperties, useLandlordId, useLandlordProperty, usePropertyAction } from "@/features/landlord/queries"
+import { PropertyRenters } from "@/features/landlord/property-renters"
+import { useInvalidateProperties, useLandlordId, useLandlordProperty, useLandlordRentals, usePropertyAction } from "@/features/landlord/queries"
 import { UnitsManager } from "@/features/landlord/units-manager"
 import { useDocumentTitle } from "@/hooks/use-document-title"
 import { formatNumber, formatRelative } from "@/lib/format"
@@ -35,6 +36,7 @@ function PropertyDetailPage() {
   const landlordId = useLandlordId()
   const { data: property, isPending, isError, error, refetch } = useLandlordProperty(id)
   const invalidate = useInvalidateProperties()
+  const rentals = useLandlordRentals()
   const [tab, setTab] = useState<Tab>("units")
   useDocumentTitle(property?.name)
 
@@ -142,8 +144,11 @@ function PropertyDetailPage() {
         />
       ) : (
         <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(0,1fr)_20rem]">
-          <div className="min-w-0 rounded-xl border border-border bg-card p-4 sm:p-5">
-            <UnitsManager propertyId={property.id} units={property.units} live={live} />
+          <div className="min-w-0 space-y-6">
+            {rentals.isPending ? <Skeleton className="h-40 rounded-xl" /> : <PropertyRenters property={property} rentals={rentals.data ?? []} />}
+            <div className="rounded-xl border border-border bg-card p-4 sm:p-5">
+              <UnitsManager propertyId={property.id} units={property.units} live={live} />
+            </div>
           </div>
 
           <aside className="divide-y divide-border rounded-xl border border-border bg-card xl:sticky xl:top-[calc(var(--header-height)+1.5rem)]">

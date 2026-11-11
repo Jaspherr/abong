@@ -109,7 +109,7 @@ test("every landlord page opens under the shared header", async ({ page }) => {
 test("add property lives with the properties, not in the header", async ({ page }) => {
   await signInAs(page, "landlord")
   await expect(page.getByRole("banner").getByRole("link", { name: "Add property" })).toHaveCount(0)
-  await page.getByRole("region", { name: "Occupancy by property" }).getByRole("link", { name: "Add property" }).click()
+  await page.getByRole("region", { name: "Your properties" }).getByRole("link", { name: "Add property" }).click()
   await expect(page).toHaveURL(/\/landlord\/properties\/new$/)
 
   await page.goto("/landlord/properties")
@@ -127,6 +127,26 @@ test("landlord handles what's waiting from the dashboard", async ({ page }) => {
   await expect(page.getByText("Viewing confirmed with Nicole Perez")).toBeVisible()
   await expect(todo.getByText("Nicole Perez wants to visit")).toHaveCount(0)
   await expect(page.getByRole("region", { name: "Coming up" }).getByText("Nicole Perez")).toBeVisible()
+})
+
+test("landlord sees who lives at each property", async ({ page }) => {
+  await signInAs(page, "landlord")
+  const properties = page.getByRole("region", { name: "Your properties" })
+  const boardingHouse = properties.getByRole("link", { name: /Santos Boarding House/ })
+  await expect(boardingHouse.getByText("Active")).toBeVisible()
+  await expect(boardingHouse.getByText("Mark Anthony Ramos, Joshua Lagman and 1 more")).toBeVisible()
+  // A stay the landlord hasn't answered waits under Needs you.
+  await expect(page.getByRole("region", { name: "Needs you" }).getByText("Janelle Ocampo says they live at Santos Residence Tapuac")).toBeVisible()
+
+  await boardingHouse.click()
+  const renters = page.getByRole("region", { name: "Who lives here" })
+  await expect(renters.getByText("Joshua Lagman")).toBeVisible()
+  await expect(renters.getByText("Mark Anthony Ramos")).toBeVisible()
+  // Room 101 has three beds marked taken and two renters recorded.
+  await expect(renters.getByText("1 more bed marked taken, with no renter recorded.")).toBeVisible()
+
+  await renters.getByRole("button", { name: "Record a renter" }).click()
+  await expect(page.getByRole("dialog").getByRole("combobox", { name: "Place" })).toHaveText(/Santos Boarding House/)
 })
 
 test("landlord can confirm, reschedule and decline viewing requests", async ({ page }) => {

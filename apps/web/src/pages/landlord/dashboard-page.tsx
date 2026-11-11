@@ -12,13 +12,14 @@ import { PATHS } from "@/constants/app"
 import { LISTING_STATUS } from "@/constants/status"
 import { useAuth } from "@/features/auth/auth-context"
 import { OccupancyBar } from "@/features/landlord/occupancy-bar"
-import { useLandlordInquiries, useLandlordProperties, useLandlordVerification, useLandlordViewings, usePropertyAction } from "@/features/landlord/queries"
+import { useLandlordInquiries, useLandlordProperties, useLandlordRentals, useLandlordVerification, useLandlordViewings, usePropertyAction } from "@/features/landlord/queries"
+import { isLivingThere, stayDates } from "@/features/rentals/rental-utils"
 import { LandlordViewingActions } from "@/features/viewings/landlord-viewing-actions"
 import { DateBlock } from "@/features/viewings/viewing-card"
 import { useDocumentTitle } from "@/hooks/use-document-title"
 import { daysSince, formatDate, formatRelative, formatTime, pluralize } from "@/lib/format"
 import { cn } from "@/lib/utils"
-import { propertiesService } from "@/services"
+import { propertiesService, type RentalWithContext } from "@/services"
 
 function greeting() {
   const h = new Date().getHours()
@@ -64,6 +65,28 @@ function TodoRow({ lead, title, detail, actions }: { lead: ReactNode; title: Rea
   )
 }
 
+/** Who lives at a property, as a short line under its occupancy. Says so when beds are taken but nobody is recorded. */
+function RenterLine({ renters, taken }: { renters: RentalWithContext[]; taken: number }) {
+  if (renters.length === 0) {
+    return taken > 0 ? <p className="mt-1 text-meta text-muted-foreground">No renters recorded yet</p> : null
+  }
+  const [first, second] = renters.map((r) => r.renter.name)
+  const names = renters.length === 1 ? first : renters.length === 2 ? `${first} and ${second}` : `${first}, ${second} and ${renters.length - 2} more`
+  return (
+    <div className="mt-1.5 flex min-w-0 items-center gap-2">
+      <span className="flex shrink-0 -space-x-1" aria-hidden="true">
+        {renters.slice(0, 3).map((r) => (
+          <PersonAvatar key={r.id} userId={r.renter.id} name={r.renter.name} className="size-7 text-caption ring-2 ring-card" />
+        ))}
+      </span>
+      <p className="line-clamp-2 min-w-0 text-meta text-muted-foreground">
+        <span className="sr-only">Living here: </span>
+        {names}
+      </p>
+    </div>
+  )
+}
+
 const iconLead = (Icon: typeof BadgeCheck) => (
   <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-secondary text-primary">
     <Icon className="size-5" aria-hidden="true" />
@@ -77,6 +100,7 @@ function LandlordDashboardPage() {
   const inquiries = useLandlordInquiries()
   const viewings = useLandlordViewings()
   const verification = useLandlordVerification()
+  const rentals = useLandlordRentals()
   const confirm = usePropertyAction((lid, pid: string) => propertiesService.confirmAvailability(lid, pid))
 
   const all = properties.data ?? []
@@ -95,9 +119,14 @@ function LandlordDashboardPage() {
   const stale = active.filter((p) => daysSince(p.availabilityConfirmedAt) > 14)
   const needsChanges = all.filter((p) => p.status === "rejected" || p.status === "suspended")
   const drafts = all.filter((p) => p.status === "draft")
+  const stays = rentals.data ?? []
+  const toAnswer = stays.filter((r) => r.awaitingMe)
+  // Longest-staying first, so the names don't reshuffle as stays are added.
+  const livingAt = (propertyId: string) =>
+    stays.filter((r) => r.listingId === propertyId && isLivingThere(r)).sort((a, b) => a.startDate.localeCompare(b.startDate))
 
-  const loading = properties.isPending || inquiries.isPending || viewings.isPending
-  const todoCount = pending.length + unread.length + stale.length + needsChanges.length + drafts.length + (needsVerification ? 1 : 0)
+  const loading = properties.isPending || inquiries.isPending || viewings.isPending || rentals.isPending
+  const todoCount = pending.length + unread.length + toAnswer.length + stale.length + needsChanges.length + drafts.length + (needsVerification ? 1 : 0)
   const summary = loading
     ? "Checking on your properties."
     : todoCount
@@ -150,6 +179,21 @@ function LandlordDashboardPage() {
                       <Button size="sm" variant="outline" asChild>
                         <Link to={`${PATHS.landlord.inquiries}?thread=${t.id}`} aria-label={`Reply to ${t.renter.name}`}>
                           Reply
+                        </Link>
+                      </Button>
+                    }
+                  />
+                ))}
+                {toAnswer.map((r) => (
+                  <TodoRow
+                    key={r.id}
+                    lead={<PersonAvatar userId={r.renter.id} name={r.renter.name} className="size-10" />}
+                    title={`${r.renter.name} says they live at ${r.propertyName}`}
+                    detail={`${r.unitName ? `${r.unitName}. ` : ""}${stayDates(r)}. Confirm it only if it's right.`}
+                    actions={
+                      <Button size="sm" variant="outline" asChild>
+                        <Link to={PATHS.landlord.renters} aria-label={`Answer ${r.renter.name}'s stay`}>
+                          Answer
                         </Link>
                       </Button>
                     }
@@ -223,7 +267,7 @@ function LandlordDashboardPage() {
           <section aria-labelledby="props-title" className="space-y-3">
             <SectionTitle
               id="props-title"
-              title="Occupancy by property"
+              title="Your properties"
               action={
                 <div className="flex flex-wrap items-center gap-1">
                   <Button variant="ghost" size="sm" asChild>
@@ -238,7 +282,7 @@ function LandlordDashboardPage() {
                 </div>
               }
             />
-            {properties.isPending ? (
+            {properties.isPending || rentals.isPending ? (
               <Skeleton className="h-48 rounded-xl" />
             ) : all.length === 0 ? (
               <p className="rounded-xl border border-dashed border-border p-5 text-sm text-muted-foreground">Properties you add will show up here.</p>
@@ -254,9 +298,10 @@ function LandlordDashboardPage() {
                         <div className="min-w-0 flex-1">
                           <p className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
                             <span className="truncate font-medium transition-colors group-hover:text-primary">{p.name}</span>
-                            {p.status !== "active" && <MetaBadge meta={LISTING_STATUS[p.status]} />}
+                            <MetaBadge meta={LISTING_STATUS[p.status]} />
                           </p>
                           {beds > 0 ? <OccupancyBar occupied={taken} capacity={beds} className="mt-1" /> : <p className="text-meta text-muted-foreground">No units yet</p>}
+                          <RenterLine renters={livingAt(p.id)} taken={taken} />
                         </div>
                         <ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
                       </Link>
