@@ -57,40 +57,12 @@ const fullScreen = "flex min-h-section flex-col justify-center";
 const textLink =
   "text-sm font-semibold underline decoration-ink/25 underline-offset-4 transition-colors hover:text-primary hover:decoration-primary";
 
-/**
- * The short label that introduces a section heading: a marker, then the text.
- * The rule takes its colour from the text, so `className` retints both on dark sections.
- */
-function SectionEyebrow({
-  children,
-  marker = <span aria-hidden="true" className="h-px w-6 shrink-0 bg-current" />,
-  className,
-}: {
-  children: ReactNode;
-  marker?: ReactNode;
-  className?: string;
-}) {
-  return (
-    <div
-      className={cn(
-        "mb-3 flex items-center gap-2.5 text-caption font-semibold text-primary",
-        className,
-      )}
-    >
-      {marker}
-      <p>{children}</p>
-    </div>
-  );
-}
-
 /** A section opening with the heading on the left and its description on the right. */
 function SplitSectionIntro({
-  eyebrow,
   title,
   titleId,
   description,
 }: {
-  eyebrow: string;
   title: ReactNode;
   titleId: string;
   description: string;
@@ -98,7 +70,6 @@ function SplitSectionIntro({
   return (
     <div className="mb-8 flex flex-col gap-4 lg:mb-10 lg:flex-row lg:items-end lg:justify-between lg:gap-12">
       <div className="min-w-0 max-w-2xl">
-        <SectionEyebrow>{eyebrow}</SectionEyebrow>
         <h2 id={titleId} className="type-display">
           {title}
         </h2>
@@ -158,8 +129,6 @@ export function NearSchoolsSection() {
       <div className="grid grid-cols-1 items-start gap-8 lg:min-h-section-body lg:grid-cols-[minmax(0,19rem)_minmax(0,1fr)] lg:items-stretch lg:gap-10 xl:grid-cols-[minmax(0,23rem)_minmax(0,1fr)] xl:gap-14">
         {/* LEFT — SECTION INTRODUCTION */}
         <div className="min-w-0 lg:self-center">
-          <SectionEyebrow className="mb-4">For students</SectionEyebrow>
-
           <h2 id="near-schools-title" className="type-display">
             Live closer.
             <span className="block text-primary">Study easier.</span>
@@ -401,7 +370,6 @@ export function TownsSection() {
       aria-labelledby="towns-title"
     >
       <SplitSectionIntro
-        eyebrow="Where to live"
         titleId="towns-title"
         title={
           <>
@@ -636,7 +604,6 @@ export function CategoriesSection() {
       aria-labelledby="categories-title"
     >
       <SplitSectionIntro
-        eyebrow="Property types"
         titleId="categories-title"
         title="Find the space that fits you."
         description="From shared rooms to private homes, explore different living spaces across Pangasinan."
@@ -851,10 +818,6 @@ export function HowItWorksSection() {
         <div className="grid grid-cols-1 items-stretch gap-8 lg:min-h-section-body lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-10 xl:gap-14">
           {/* LEFT — MATCHES STEPS HEIGHT */}
           <div className="flex flex-col justify-center rounded-2xl bg-ink p-7 text-white sm:p-9 xl:p-11">
-            <SectionEyebrow className="text-white/65">
-              Step by step
-            </SectionEyebrow>
-
             <h2 id="how-title" className="max-w-[14ch] type-display">
               How renting through Abong works.
             </h2>
@@ -919,9 +882,6 @@ export function TrustSection() {
       <div className="container-page">
         <div className="grid grid-cols-1 items-end gap-8 border-b border-white/15 pb-10 sm:pb-12 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] lg:gap-14 lg:pb-14">
           <div className="min-w-0">
-            <SectionEyebrow className="text-mango">
-              Avoid rental scams
-            </SectionEyebrow>
             <h2 id="trust-title" className="max-w-[19ch] type-display">
               Renting from a stranger takes trust.
               <span className="block text-mango">Check first.</span>
@@ -1024,9 +984,6 @@ export function LandlordCtaSection() {
         />
 
         <div className="relative max-w-2xl">
-          <SectionEyebrow className="text-white/85">
-            List for free
-          </SectionEyebrow>
           <h2 id="landlord-cta-title" className="type-display">
             Have a place to rent?
             <span className="block text-white/75">Make it known.</span>
