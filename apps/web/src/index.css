@@ -275,12 +275,31 @@
     ::-webkit-scrollbar-thumb:active {
       background-color: var(--scrollbar-thumb-hover);
     }
+    /* The page's own scrollbar sits beside full-bleed sections, so a clear track
+       shows the canvas as a stripe next to tinted ones. A solid rail with a
+       hairline reads as browser chrome on every section. */
+    html::-webkit-scrollbar-track {
+      background-color: var(--muted);
+      box-shadow: inset 1px 0 0 var(--border);
+    }
     @supports not selector(::-webkit-scrollbar) {
       * {
         scrollbar-width: thin;
         scrollbar-color: var(--scrollbar-thumb) transparent;
       }
+      html {
+        scrollbar-color: var(--scrollbar-thumb) var(--muted);
+      }
     }
+  }
+
+  /*
+   * Radix locks scroll for dialogs, sheets and selects, and pads <body> by the
+   * scrollbar's width so nothing shifts. The gutter above is already reserved,
+   * so that padding would shift the page instead: cancel it.
+   */
+  html body[data-scroll-locked] {
+    margin-right: 0 !important;
   }
 }
 
