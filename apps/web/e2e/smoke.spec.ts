@@ -25,7 +25,7 @@ test("search from the homepage and open a listing", async ({ page }) => {
   await expect(page.getByRole("heading", { level: 1, name: /near PHINMA UPang/ })).toBeVisible()
 
   await page.goto("/search?location=dagupan")
-  await expect(page.getByRole("heading", { level: 1, name: /places? to rent in Dagupan City/ })).toBeVisible()
+  await expect(page.getByRole("heading", { level: 1, name: /places? in Dagupan City/ })).toBeVisible()
   await page.getByRole("link", { name: "Santos Boarding House" }).click()
 
   await expect(page.getByRole("heading", { level: 1, name: "Santos Boarding House" })).toBeVisible()
@@ -52,7 +52,7 @@ test("filters narrow results and are reflected in the URL", async ({ page, isMob
   await sheet.getByRole("button", { name: /Show 1 place/ }).click()
 
   await expect(page).toHaveURL(/types=dormitory/)
-  await expect(page.getByRole("heading", { level: 1, name: "1 place to rent in Dagupan City" })).toBeVisible()
+  await expect(page.getByRole("heading", { level: 1, name: "1 place in Dagupan City" })).toBeVisible()
   if (!isMobile) await expect(page.getByRole("button", { name: "Remove filter: Dormitory" })).toBeVisible()
 })
 
@@ -806,7 +806,10 @@ test.describe("property type carousel", () => {
       // Hidden slides are inert, so only the showing one's link is reachable.
       const link = carousel(page).getByRole("link", { name: /^Explore / })
       await expect(link).toHaveCount(1)
-      expect(await link.getAttribute("href")).toBe(`/search?types=${type}`)
+      // The outgoing slide fades for a moment after the change, so read the href from the active one.
+      await expect(
+        carousel(page).locator('[data-active="true"]').getByRole("link", { name: /^Explore / }),
+      ).toHaveAttribute("href", `/search?types=${type}`)
       await carousel(page).getByRole("button", { name: "Next property type" }).click()
     }
     await carousel(page).getByRole("link", { name: "Explore boarding houses" }).click()

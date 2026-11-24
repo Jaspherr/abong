@@ -115,12 +115,12 @@ function CampusTile({
         <div className="flex w-[5.75rem] shrink-0 flex-col items-center justify-center border-l border-border/70 bg-muted/40 px-2 text-center transition-colors duration-200 group-hover:bg-primary/[0.07] sm:w-25">
           <span className="font-display text-[1.8rem] font-semibold leading-none tracking-[-0.055em] text-foreground tabular-nums sm:text-[2.2rem]">
             {school.listingCount}
-          </span>
+          </span>{" "}
 
           <span className="mt-2 text-[10px] font-medium leading-4 text-muted-foreground">
             {school.listingCount === 1
               ? "place"
-              : "places"}
+              : "places"}{" "}
             <span className="block">nearby</span>
           </span>
         </div>
