@@ -618,7 +618,7 @@ test("changing the rent on a live listing sends it back for review", async ({ pa
 
 test("each page names itself in the browser tab", async ({ page }) => {
   await page.goto("/")
-  await expect(page).toHaveTitle(/^Abong: /)
+  await expect(page).toHaveTitle("Abong")
   await page.goto("/safety")
   await expect(page).toHaveTitle("Renting safely | Abong")
   await page.goto("/listing/santos-boarding-house")
